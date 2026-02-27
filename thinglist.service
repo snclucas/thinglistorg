@@ -1,0 +1,44 @@
+[Unit]
+Description=ThingList Gunicorn Application
+Documentation=https://docs.gunicorn.org/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=thinglist
+Group=www-data
+WorkingDirectory=/var/www/thinglist
+Environment="PATH=/var/www/thinglist/.venv/bin"
+Environment="FLASK_ENV=production"
+EnvironmentFile=/var/www/thinglist/.env.production
+
+# Auto-reload on file changes
+ExecStartPre=/bin/bash -c 'test -f /var/www/thinglist/.env.production'
+ExecStart=/var/www/thinglist/.venv/bin/gunicorn \
+    -c /var/www/thinglist/gunicorn_config.py \
+    --access-logfile /var/log/thinglist/access.log \
+    --error-logfile /var/log/thinglist/error.log \
+    wsgi:app
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=60s
+StartLimitBurst=3
+
+# Process management
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=8192
+
+# Security
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target
+

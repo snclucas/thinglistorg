@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Groups - Collaborate on Inventory with ThingList{% endblock %}
+
+{% block meta_description %}Manage your collaboration groups on ThingList. Create groups, invite members, and work together on shared inventories.{% endblock %}
+
+{% block meta_keywords %}groups, team collaboration, group management, shared lists, team inventory{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Groups - Collaborate with ThingList{% endblock %}
+
+{% block og_description %}Create and manage collaboration groups for shared inventory management.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='lists.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="modern-animate-in">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-title-section">
+            <h1 class="page-title">
+                <i class="fas fa-users"></i>
+                Groups
+            </h1>
+            <p class="page-subtitle">Collaborate with others and manage shared lists</p>
+        </div>
+        <a href="{{ url_for('create_group') }}" class="modern-btn modern-btn-primary">
+            <i class="fas fa-plus"></i>
+            Create Group
+        </a>
+    </div>
+
+    {% if owned_groups or member_groups %}
+    <!-- Statistics Bar -->
+    <div class="stats-bar">
+        <div class="stat-box">
+            <div class="stat-value">{{ owned_groups|length + member_groups|length }}</div>
+            <div class="stat-label">Total Groups</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">{{ owned_groups|length }}</div>
+            <div class="stat-label">Groups Owned</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">{{ member_groups|length }}</div>
+            <div class="stat-label">Groups Joined</div>
+        </div>
+    </div>
+
+    <!-- All Groups Table -->
+    <div class="section-group">
+        <div class="section-header">
+            <h2 class="section-title">
+                All Groups
+            </h2>
+            <span class="section-badge">{{ owned_groups|length + member_groups|length }}</span>
+        </div>
+        <div class="modern-table-container">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Members</th>
+                        <th>Lists</th>
+                        <th>Role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Owned Groups -->
+                    {% for group in owned_groups %}
+                    <tr class="group-owned-row">
+                        <td data-label="Name" class="group-name-cell">
+                            <a href="{{ url_for('view_group', group_id=group.id) }}" class="group-name-link">
+                                <i class="fas fa-users"></i>
+                                {{ group.name }}
+                            </a>
+                        </td>
+                        <td data-label="Description" class="group-description-cell">
+                            {% if group.description %}
+                                {{ group.description[:100] }}{% if group.description|length > 100 %}...{% endif %}
+                            {% else %}
+                                <span style="color: var(--gray-400);">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Members">
+                            {{ group.members|length }}
+                        </td>
+                        <td data-label="Lists">
+                            {{ group.lists|length }}
+                        </td>
+                        <td data-label="Role">
+                            <span class="modern-badge modern-badge-primary">
+                                <i class="fas fa-crown" style="margin-right: 0.25rem;"></i>Owner
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <!-- Member Groups -->
+                    {% for group in member_groups %}
+                    <tr>
+                        <td data-label="Name" class="group-name-cell">
+                            <a href="{{ url_for('view_group', group_id=group.id) }}" class="group-name-link">
+                                <i class="fas fa-users"></i>
+                                {{ group.name }}
+                            </a>
+                        </td>
+                        <td data-label="Description" class="group-description-cell">
+                            {% if group.description %}
+                                {{ group.description[:100] }}{% if group.description|length > 100 %}...{% endif %}
+                            {% else %}
+                                <span style="color: var(--gray-400);">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Members">
+                            {{ group.members|length }}
+                        </td>
+                        <td data-label="Lists">
+                            {{ group.lists|length }}
+                        </td>
+                        <td data-label="Role">
+                            <span class="modern-badge modern-badge-secondary">Member</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Empty State -->
+    {% if not owned_groups and not member_groups %}
+    <div class="modern-empty-state">
+        <i class="fas fa-users"></i>
+        <h2 class="empty-title">No groups yet</h2>
+        <p class="empty-description">Create your first group to start collaborating with others</p>
+        <a href="{{ url_for('create_group') }}" class="modern-btn modern-btn-primary">
+            <i class="fas fa-plus"></i>
+            Create Your First Group
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .group-name-link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--primary-600);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all var(--transition-fast);
+    }
+
+    .group-name-link:hover {
+        color: var(--primary-700);
+        text-decoration: underline;
+    }
+
+    .group-description-cell {
+        color: var(--gray-600);
+    }
+
+    .empty-description {
+        margin-bottom: 2.5rem;
+    }
+
+    .group-owned-row {
+        background: var(--primary-50);
+        border-left: 3px solid var(--primary-600);
+    }
+
+    .group-owned-row:hover {
+        background: var(--primary-100);
+    }
+
+    .section-group {
+        margin-bottom: 3rem;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--gray-200);
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    .section-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2rem;
+        padding: 0.25rem 0.75rem;
+        background: var(--primary-100);
+        color: var(--primary-700);
+        border-radius: var(--radius-full);
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .page-title-section {
+            width: 100%;
+        }
+
+        .modern-table {
+            font-size: 0.875rem;
+        }
+
+        .modern-table th,
+        .modern-table td {
+            padding: 0.75rem 0.5rem;
+        }
+
+        .group-name-link {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .group-description-cell {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+

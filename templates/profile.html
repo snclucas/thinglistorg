@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile - ThingList{% endblock %}
+
+{% block meta_description %}Manage your ThingList user profile. Update your personal information and account settings.{% endblock %}
+
+{% block meta_keywords %}user profile, account settings, profile management{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Your Profile - ThingList{% endblock %}
+
+{% block og_description %}Manage your ThingList profile and account information.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        background: white;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .profile-container h2 {
+        color: #2563eb;
+        margin-bottom: 2rem;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+
+    .profile-section {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .profile-section h3 {
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .profile-section:last-child {
+        border-bottom: none;
+    }
+
+    .profile-item {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        margin-bottom: 1.5rem;
+        align-items: center;
+    }
+
+    .profile-label {
+        font-weight: 600;
+        color: #2563eb;
+    }
+
+    .profile-value {
+        color: #333;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+
+    .btn-primary {
+        background: #2563eb;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #333;
+    }
+
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+
+    <div class="profile-section">
+        <h3>Account Information</h3>
+
+        <div class="profile-item">
+            <span class="profile-label">Username:</span>
+            <span class="profile-value">{{ user.username }}</span>
+        </div>
+
+        <div class="profile-item">
+            <span class="profile-label">Email:</span>
+            <span class="profile-value">{{ user.email }}</span>
+        </div>
+
+        <div class="profile-item">
+            <span class="profile-label">Status:</span>
+            <span class="profile-value">{% if user.is_active %}Active{% else %}Inactive{% endif %}</span>
+        </div>
+    </div>
+
+    <div class="profile-section">
+        <h3>⚙️ Settings</h3>
+        <div class="profile-item" style="grid-template-columns: 1fr;">
+            <a href="{{ url_for('user_preferences') }}" class="btn btn-primary" style="text-align: center; display: block;">
+                <i class="fas fa-sliders-h"></i>
+                Manage Preferences
+            </a>
+        </div>
+        <p style="margin: 1rem 0 0 0; font-size: 0.9rem; color: #6b7280;">
+            Configure your pagination, display, and other application preferences
+        </p>
+    </div>
+
+    <div class="profile-section">
+        <h3>📥 Data & Privacy (GDPR)</h3>
+        <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #6b7280;">
+            Download a copy of all your personal data or delete your account completely.
+        </p>
+        <div class="profile-item" style="grid-template-columns: 1fr;">
+            <a href="{{ url_for('export_data') }}" class="btn btn-primary" style="text-align: center; display: block;">
+                <i class="fas fa-download"></i>
+                Export My Data
+            </a>
+        </div>
+        <p style="margin: 0.75rem 0 0 0; font-size: 0.85rem; color: #6b7280;">
+            Get a JSON file with all your lists, items, and account information.
+        </p>
+    </div>
+
+    <div class="profile-section">
+        <h3>⚠️ Danger Zone</h3>
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 1rem; margin-bottom: 1rem;">
+            <p style="margin: 0; color: #7f1d1d; font-size: 0.9rem;">
+                <strong>Warning:</strong> These actions cannot be undone.
+            </p>
+        </div>
+        <div class="profile-item" style="grid-template-columns: 1fr;">
+            <a href="{{ url_for('delete_account') }}" class="btn" style="background: #ef4444; color: white; text-align: center; display: block;">
+                <i class="fas fa-trash"></i>
+                Delete Account
+            </a>
+        </div>
+        <p style="margin: 0.75rem 0 0 0; font-size: 0.85rem; color: #6b7280;">
+            Permanently delete your account and all associated data. We recommend exporting your data first.
+        </p>
+    </div>
+
+
+    <div class="action-buttons">
+        <a href="{{ url_for('change_password') }}" class="btn btn-primary">
+            <i class="fas fa-lock" style="margin-right: 0.5rem;"></i>
+            Change Password
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+        <a href="{{ url_for('logout') }}" class="btn btn-primary">Logout</a>
+    </div>
+</div>
+{% endblock %}
+

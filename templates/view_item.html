@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.name }} - ThingList{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='view-item.css') }}">
+{% endblock %}
+
+{% block content %}
+    <div class="item-view-container modern-animate-in">
+        <!-- Breadcrumb -->
+        <div class="modern-breadcrumb">
+            <a href="{{ url_for('lists') }}"><i class="fas fa-list"></i> My Lists</a>
+            <span> / </span>
+            <a href="{{ url_for('view_list', list_id=list.id) }}">{{ list.name }}</a>
+            <span> / </span>
+            <span style="color: var(--gray-600);">{{ item.name }}</span>
+        </div>
+
+        <!-- Item Header -->
+        <div class="item-header-card">
+            <div class="item-header-content">
+                <div class="item-info">
+                    <h1 class="item-title">
+                        <span>{{ item.name }}</span>
+                    </h1>
+
+                    {% if list.is_field_visible('description') %}
+                        <div class="item-description">
+                            {% if item.description %}
+                                {{ item.description }}
+                            {% else %}
+                                <span class="detail-value empty">Not set</span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Tags Section -->
+                    {% if list.is_field_visible('tags') %}
+                        <div class="tags-list">
+                            {% if item.get_tags_list() %}
+                                {% for tag in item.get_tags_list() %}
+                                    <span class="modern-badge modern-badge-primary">{{ tag }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="detail-value empty">No tags</span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if list.is_field_visible('notes') %}
+                        <div class="item-notes-box">
+                            <div class="item-notes-title">
+                                <i class="fas fa-sticky-note"></i>
+                                <span>Notes</span>
+                            </div>
+                            <div class="item-notes-content">
+                                {% if item.notes %}
+                                    {{ item.notes }}
+                                {% else %}
+                                    <span class="detail-value empty">No notes</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <br>
+
+                    <div class="details-grid">
+
+                        <!-- Low Stock Threshold -->
+                        {% if list.is_field_visible('low_stock_threshold') %}
+                            <div class="detail-box">
+                                <div class="detail-label">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>Low Stock Threshold</span>
+                                </div>
+                                <div class="detail-value">
+                                    {% if item.low_stock_threshold > 0 %}
+                                        {{ item.low_stock_threshold }}
+                                    {% else %}
+                                        <span class="empty">Not set</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- URL -->
+                        {% if list.is_field_visible('url') %}
+                            <div class="detail-box">
+                                <div class="detail-label">
+                                    <i class="fas fa-link"></i>
+                                    <span>URL</span>
+                                </div>
+                                <div class="detail-value {% if not item.url %}empty{% endif %}"
+                                     style="font-size: 0.9375rem;">
+                                    {% if item.url %}
+                                        <a href="{{ item.url }}" target="_blank" class="url-link">{{ item.url }}</a>
+                                    {% else %}
+                                        Not set
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Reminder -->
+                        {% if list.is_field_visible('reminder_at') %}
+                            <div class="detail-box">
+                                <div class="detail-label">
+                                    <i class="fas fa-bell"></i>
+                                    <span>Reminder</span>
+                                </div>
+                                <div class="detail-value" style="font-size: 1rem;">
+                                    {% if item.reminder_at %}
+                                        <span class="reminder-badge">
+                            <i class="fas fa-bell"></i>
+                            <span>{{ item.reminder_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </span>
+                                    {% else %}
+                                        <span class="detail-value empty">Not set</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+
+                </div>
+
+                <div class="item-actions-group">
+                    {% if list.is_field_visible('images') and item.get_main_image() %}
+                        <a href="#item-images" class="item-image-link">View all images ({{ item.images|length }})</a>
+                        <div class="item-main-image" style="width: {{ image_display_size }}px;">
+                            <img src="{{ item.get_main_image().image_url }}" alt="{{ item.name }} image" style="width: {{ image_display_size }}px; height: {{ image_display_size }}px;">
+                        </div>
+                    {% endif %}
+                    {% if can_edit %}
+                        <a href="{{ url_for('edit_item', item_id=item.id) }}" class="modern-btn modern-btn-primary">
+                            <i class="fas fa-pen"></i>
+                            Edit
+                        </a>
+                        <form method="POST" action="{{ url_for('delete_item', item_id=item.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="modern-btn modern-btn-danger" style="width: 100%;"
+                                    onclick="return confirm('Delete this item? This cannot be undone.');">
+                                <i class="fas fa-trash"></i>
+                                Delete
+                            </button>
+                        </form>
+                    {% else %}
+                        <div style="padding: 1rem; background: #f0f4ff; border-left: 4px solid #2563eb; border-radius: 4px;">
+                            <p style="margin: 0; color: #374151; font-weight: 500;">You have view-only access to this
+                                item</p>
+                        </div>
+                    {% endif %}
+                    {% if (list.is_field_visible('item_type') and item.item_type)
+                          or (list.is_field_visible('location') and item.location)
+                          or (list.is_field_visible('quantity') and item.quantity is not none)
+                          or (list.is_field_visible('barcode') and item.barcode)
+                          or item.created_at
+                          or (item.updated_at and item.updated_at != item.created_at) %}
+                        <div class="item-side-details">
+                            {% if list.is_field_visible('item_type') and item.item_type %}
+                                <div class="item-side-detail">
+                                    <span class="item-side-label">Type</span>
+                                    <span class="item-side-value">{{ item.item_type.name }}</span>
+                                </div>
+                            {% endif %}
+                            {% if list.is_field_visible('location') and item.location %}
+                                <div class="item-side-detail">
+                                    <span class="item-side-label">Location</span>
+                                    <span class="item-side-value">{{ item.location }}</span>
+                                </div>
+                            {% endif %}
+                            {% if list.is_field_visible('quantity') and item.quantity is not none %}
+                                <div class="item-side-detail">
+                                    <span class="item-side-label">Quantity</span>
+                                    <span class="item-side-value">{{ item.quantity }}</span>
+                                </div>
+                            {% endif %}
+                            {% if list.is_field_visible('barcode') and item.barcode %}
+                                <div class="item-side-detail">
+                                    <span class="item-side-label">Barcode</span>
+                                    <span class="item-side-value">{{ item.barcode }}</span>
+                                </div>
+                            {% endif %}
+                            {% if item.created_at %}
+                                <div class="item-side-detail">
+                                    <span class="item-side-label">Created</span>
+                                    <span class="item-side-value">{{ item.created_at.strftime('%b %d, %Y %H:%M') }}</span>
+                                </div>
+                            {% endif %}
+                            {% if item.updated_at and item.updated_at != item.created_at %}
+                                <div class="item-side-detail">
+                                    <span class="item-side-label">Last Updated</span>
+                                    <span class="item-side-value">{{ item.updated_at.strftime('%b %d, %Y %H:%M') }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+
+
+            </div>
+        </div>
+
+            <!-- Custom Fields Section -->
+        {% if list.get_custom_fields() %}
+            <div class="details-card">
+
+                <div class="details-grid">
+                    {% for field in list.get_custom_fields() %}
+                        {% if field.is_visible %}
+                            {% set field_value = item.get_custom_field_value(field.id) %}
+                            <div class="detail-box">
+                                <div class="detail-label">
+                                    <i class="fas fa-list"></i>
+                                    <span>{{ field.name }}</span>
+                                </div>
+                                <div class="detail-value">
+                                    {% if field.field_type == 'text' %}
+                                        {% if field_value and field_value.value_text %}
+                                            {{ field_value.value_text }}
+                                        {% else %}
+                                            <span class="empty">Not set</span>
+                                        {% endif %}
+                                    {% elif field.field_type == 'boolean' %}
+                                        {% if field_value and field_value.value_bool %}
+                                            <span style="color: var(--primary-700); font-weight: 600;">✓ Yes</span>
+                                        {% else %}
+                                            <span class="empty">No</span>
+                                        {% endif %}
+                                    {% elif field.field_type == 'options' %}
+                                        {% if field_value and field_value.value_option %}
+                                            <span class="modern-badge modern-badge-primary">{{ field_value.value_option }}</span>
+                                        {% else %}
+                                            <span class="empty">Not set</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if list.is_field_visible('images') and item.images %}
+            <details class="details-card item-images-collapsible" id="item-images">
+                <summary class="details-card-header item-images-summary">
+                    <i class="fas fa-image"></i>
+                    <h2 class="details-card-title">Images ({{ item.images|length }})</h2>
+                </summary>
+
+                <div class="item-images-masonry">
+                    {% for image in item.images %}
+                        <div class="item-image-tile">
+                            <img src="{{ image.image_url }}" alt="{{ image.original_filename }}">
+                            <div class="item-image-actions">
+                                {% if can_edit %}
+                                    <form method="POST" action="{{ url_for('set_item_image_main', item_id=item.id, image_id=image.id) }}">
+                                        <button type="submit" class="modern-btn modern-btn-secondary" {% if image.is_main %}disabled{% endif %}>
+                                            {% if image.is_main %}Main{% else %}Set Main{% endif %}
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                <span class="item-image-meta">{{ image.original_filename }}</span>
+                            </div>
+                            {% if can_edit %}
+                                <label class="item-image-select">
+                                    <input type="checkbox" form="delete-images-form" name="image_ids" value="{{ image.id }}">
+                                    Delete
+                                </label>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if can_edit %}
+                    <form id="delete-images-form" method="POST" action="{{ url_for('delete_item_images', item_id=item.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="modern-btn modern-btn-danger"
+                                onclick="return confirm('Delete selected images? This cannot be undone.');">
+                            Delete Selected
+                        </button>
+                    </form>
+                {% endif %}
+            </details>
+        {% endif %}
+
+        <!-- Attachments Section -->
+        {% if list.is_field_visible('attachments') %}
+            <div class="attachments-card">
+                <div class="details-card-header">
+                    <i class="fas fa-paperclip"></i>
+                    <h2 class="details-card-title">Attachments ({{ item.attachments|length }})</h2>
+                </div>
+
+                {% if item.attachments %}
+                    {% for attachment in item.attachments %}
+                        <div class="attachment-item">
+                            <div class="attachment-info">
+                                <div class="attachment-icon"><i class="fas fa-file"></i></div>
+                                <div class="attachment-details">
+                                    <div class="attachment-name">{{ attachment.filename }}</div>
+                                    {% if attachment.file_size %}
+                                        <div class="attachment-size">
+                                            {% if attachment.file_size < 1024 %}
+                                                {{ attachment.file_size }} B
+                                            {% elif attachment.file_size < 1048576 %}
+                                                {{ "%.1f"|format(attachment.file_size / 1024) }} KB
+                                            {% else %}
+                                                {{ "%.1f"|format(attachment.file_size / 1048576) }} MB
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <a href="{{ url_for('download_attachment', attachment_id=attachment.id) }}"
+                               class="attachment-download-btn">
+                                <i class="fas fa-download"></i>
+                                <span>Download</span>
+                            </a>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="item-notes-box" style="margin-top: 1rem;">
+                        <div class="item-notes-content">
+                            <span class="detail-value empty">No attachments</span>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+
+
+        <!-- Back Link -->
+        <div class="back-link-container">
+            <a href="{{ url_for('view_list', list_id=list.id) }}" class="back-link">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to {{ list.name }}</span>
+            </a>
+        </div>
+    </div>
+{% endblock %}

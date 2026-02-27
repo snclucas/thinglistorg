@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}Data Processing & GDPR Compliance - ThingList{% endblock %}
+
+{% block meta_description %}Data Processing information and GDPR compliance details for ThingList.{% endblock %}
+
+{% block og_title %}Data Processing & GDPR Compliance - ThingList{% endblock %}
+
+{% block extra_css %}
+<style>
+    .policy-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        background: white;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .policy-container h1 {
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+        font-size: 2rem;
+        font-weight: 600;
+    }
+
+    .policy-container h2 {
+        color: #2563eb;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        font-size: 1.4rem;
+        font-weight: 600;
+        border-top: 2px solid #e5e7eb;
+        padding-top: 1rem;
+    }
+
+    .policy-container h2:first-of-type {
+        border-top: none;
+        padding-top: 0;
+        margin-top: 0;
+    }
+
+    .policy-container h3 {
+        color: #1f2937;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .policy-container p {
+        color: #4b5563;
+        margin-bottom: 1rem;
+        line-height: 1.6;
+    }
+
+    .policy-container ul {
+        margin: 1rem 0 1rem 2rem;
+        color: #4b5563;
+    }
+
+    .policy-container li {
+        margin-bottom: 0.5rem;
+        line-height: 1.6;
+    }
+
+    .policy-container table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5rem 0;
+    }
+
+    .policy-container table th,
+    .policy-container table td {
+        border: 1px solid #e5e7eb;
+        padding: 0.75rem;
+        text-align: left;
+    }
+
+    .policy-container table th {
+        background: #f3f4f6;
+        color: #1f2937;
+        font-weight: 600;
+    }
+
+    .policy-container table td {
+        color: #4b5563;
+    }
+
+    .highlight-box {
+        background: #f0fdf4;
+        border-left: 4px solid #16a34a;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border-radius: 4px;
+    }
+
+    .info-box {
+        background: #f0f4ff;
+        border-left: 4px solid #2563eb;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border-radius: 4px;
+    }
+
+    .compliance-badge {
+        display: inline-block;
+        background: #10b981;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 600;
+        margin: 0.5rem 0.5rem 0.5rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="policy-container">
+    <h1>🛡️ Data Processing & GDPR Compliance</h1>
+
+    <div class="highlight-box">
+        <p style="margin: 0;">
+            <strong>ThingList is GDPR compliant.</strong> We are committed to protecting user privacy and ensuring compliance with the General Data Protection Regulation (GDPR) and other applicable privacy laws.
+        </p>
+    </div>
+
+    <h2>GDPR Compliance Status</h2>
+    <p>
+        <span class="compliance-badge">✓ GDPR Compliant</span>
+        <span class="compliance-badge">✓ Data Portability</span>
+        <span class="compliance-badge">✓ Right to Erasure</span>
+        <span class="compliance-badge">✓ Transparent Practices</span>
+    </p>
+
+    <h2>Legal Basis for Processing</h2>
+    <p>
+        We process personal data under the following legal bases as outlined in GDPR Article 6:
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th>Data Type</th>
+                <th>Legal Basis</th>
+                <th>Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Account Information</td>
+                <td>Consent & Contract</td>
+                <td>Service provision and account management</td>
+            </tr>
+            <tr>
+                <td>Inventory Data</td>
+                <td>Contract</td>
+                <td>Core functionality - storing your lists and items</td>
+            </tr>
+            <tr>
+                <td>Audit Logs</td>
+                <td>Legitimate Interest</td>
+                <td>Security and fraud prevention</td>
+            </tr>
+            <tr>
+                <td>Usage Analytics</td>
+                <td>Legitimate Interest</td>
+                <td>Service improvement and optimization</td>
+            </tr>
+            <tr>
+                <td>Technical Data</td>
+                <td>Legitimate Interest</td>
+                <td>Security and service stability</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Your GDPR Rights</h2>
+    <p>
+        Under GDPR, you have the following rights over your personal data:
+    </p>
+
+    <h3>✓ Right of Access (Article 15)</h3>
+    <p>
+        You have the right to request and receive a copy of all personal data we hold about you. Use the "Export My Data" feature on your profile to download your data in JSON format.
+    </p>
+    <div class="info-box">
+        <strong>How to exercise:</strong> Click "Export My Data" in your profile to download your data immediately.
+    </div>
+
+    <h3>✓ Right to Rectification (Article 16)</h3>
+    <p>
+        You have the right to correct inaccurate or incomplete personal data. You can update your account information directly from your profile.
+    </p>
+    <div class="info-box">
+        <strong>How to exercise:</strong> Update your account information directly from your profile page.
+    </div>
+
+    <h3>✓ Right to Erasure (Article 17 - "Right to be Forgotten")</h3>
+    <p>
+        You have the right to have your personal data deleted. When you delete your account, all associated data is permanently removed from our systems.
+    </p>
+    <div class="info-box">
+        <strong>How to exercise:</strong> Go to your profile and click "Delete Account" in the Danger Zone section. You will be asked to confirm with your password.
+    </div>
+
+    <h3>✓ Right to Data Portability (Article 20)</h3>
+    <p>
+        You have the right to receive your personal data in a structured, commonly used, and machine-readable format. We provide this functionality through our data export feature.
+    </p>
+    <div class="info-box">
+        <strong>How to exercise:</strong> Click "Export My Data" to download all your information in JSON format.
+    </div>
+
+    <h3>✓ Right to Restrict Processing (Article 18)</h3>
+    <p>
+        You have the right to restrict how we process your personal data. You can do this by deleting your account or contacting us with specific restrictions.
+    </p>
+
+    <h3>✓ Right to Object (Article 21)</h3>
+    <p>
+        You have the right to object to the processing of your personal data. Contact us with details of your objection.
+    </p>
+
+    <h3>✓ Right to Withdraw Consent (Article 7)</h3>
+    <p>
+        You can withdraw your consent at any time by deleting your account or contacting us.
+    </p>
+
+    <h3>✓ Right Not to be Subject to Automated Decision-Making (Article 22)</h3>
+    <p>
+        We do not use automated decision-making or profiling that would have a legal effect on you.
+    </p>
+
+    <h2>Data Processing Activities</h2>
+
+    <h3>Inventory Management</h3>
+    <ul>
+        <li><strong>Data Processed:</strong> Lists, items, attachments, images</li>
+        <li><strong>Duration:</strong> Until account deletion</li>
+        <li><strong>Purpose:</strong> Core service functionality</li>
+        <li><strong>Recipients:</strong> Authorized users you grant access to</li>
+    </ul>
+
+    <h3>Collaboration & Sharing</h3>
+    <ul>
+        <li><strong>Data Processed:</strong> Share permissions, group memberships</li>
+        <li><strong>Duration:</strong> Until share is revoked or account deleted</li>
+        <li><strong>Purpose:</strong> Enable collaboration between users</li>
+        <li><strong>Recipients:</strong> Other group members and shared users</li>
+    </ul>
+
+    <h3>Security & Fraud Prevention</h3>
+    <ul>
+        <li><strong>Data Processed:</strong> Audit logs, access logs, IP addresses</li>
+        <li><strong>Duration:</strong> 90 days (retention period)</li>
+        <li><strong>Purpose:</strong> Detect and prevent unauthorized access</li>
+        <li><strong>Recipients:</strong> Internal security team only</li>
+    </ul>
+
+    <h3>Service Improvement</h3>
+    <ul>
+        <li><strong>Data Processed:</strong> Aggregated usage statistics</li>
+        <li><strong>Duration:</strong> As long as account is active</li>
+        <li><strong>Purpose:</strong> Analyze usage patterns and improve services</li>
+        <li><strong>Recipients:</strong> Development team only</li>
+    </ul>
+
+    <h2>Data Retention Policy</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Data Type</th>
+                <th>Retention Period</th>
+                <th>Deletion Method</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Active Account Data</td>
+                <td>Duration of account + 30 days after deletion</td>
+                <td>Permanent deletion from database</td>
+            </tr>
+            <tr>
+                <td>Audit Logs</td>
+                <td>90 days</td>
+                <td>Automatic purging</td>
+            </tr>
+            <tr>
+                <td>Session Data</td>
+                <td>30 days of inactivity</td>
+                <td>Automatic expiration</td>
+            </tr>
+            <tr>
+                <td>Backup Copies</td>
+                <td>30 days</td>
+                <td>Automatic rotation</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Data Security Measures</h2>
+    <ul>
+        <li><strong>Encryption:</strong> All data in transit uses SSL/TLS encryption</li>
+        <li><strong>Password Security:</strong> Passwords stored using industry-standard hashing (bcrypt)</li>
+        <li><strong>Access Control:</strong> Role-based access to user data</li>
+        <li><strong>Authentication:</strong> Secure session management with CSRF protection</li>
+        <li><strong>Monitoring:</strong> Continuous security monitoring and logging</li>
+        <li><strong>Backup:</strong> Regular encrypted backups with 30-day retention</li>
+        <li><strong>Incident Response:</strong> Documented procedures for security incidents</li>
+    </ul>
+
+    <h2>Third-Party Data Processors</h2>
+    <p>
+        We do not share your personal data with third parties. All data processing occurs on our own secure servers. We do not use:
+    </p>
+    <ul>
+        <li>Third-party analytics services</li>
+        <li>Marketing or advertising platforms</li>
+        <li>Data brokers or aggregators</li>
+        <li>Cloud services for personal data storage</li>
+    </ul>
+
+    <h2>Data Breach Response</h2>
+    <p>
+        In the event of a confirmed data breach, we will:
+    </p>
+    <ul>
+        <li>Notify affected users without undue delay</li>
+        <li>Provide details about the breach and affected data</li>
+        <li>Recommend steps users can take to protect themselves</li>
+        <li>Report to regulatory authorities if required by law</li>
+        <li>Document the incident and response measures</li>
+    </ul>
+
+    <h2>International Data Transfers</h2>
+    <p>
+        All user data is stored and processed within the EU/EEA region. We do not transfer data outside the EU/EEA region without appropriate safeguards as required by GDPR.
+    </p>
+
+    <h2>Contact & Complaints</h2>
+    <p>
+        For questions about our data processing practices or to exercise your GDPR rights:
+    </p>
+    <div class="info-box">
+        <p style="margin: 0;">
+            <strong>Data Protection Officer:</strong><br>
+            Email: privacy@thinglist.com<br>
+            Response time: Within 30 days<br>
+            <br>
+            <strong>Supervisory Authority:</strong><br>
+            If you believe we are not complying with GDPR, you have the right to lodge a complaint with your local data protection authority.
+        </p>
+    </div>
+
+    <h2>Policy Updates</h2>
+    <p>
+        This Data Processing Policy may be updated from time to time to reflect changes in our practices and legal requirements. We will notify users of significant changes and obtain consent if required by law.
+    </p>
+
+    <div class="highlight-box">
+        <p style="margin: 0;">
+            <strong>Last Updated:</strong> February 27, 2026<br>
+            <strong>Next Review:</strong> February 27, 2027<br>
+            <strong>Your privacy is our priority.</strong>
+        </p>
+    </div>
+</div>
+{% endblock %}
+

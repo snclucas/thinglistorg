@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - ThingList Inventory Management{% endblock %}
+
+{% block meta_description %}Create a free ThingList account to start managing your inventory, organizing items, and collaborating with your team today.{% endblock %}
+
+{% block meta_keywords %}sign up, register, create account, free inventory management{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Sign Up for ThingList{% endblock %}
+
+{% block og_description %}Create a free ThingList account to manage your inventory.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-container {
+        max-width: 500px;
+        margin: 2rem auto;
+        background: white;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+    }
+
+    .auth-container h2 {
+        color: #2563eb;
+        margin-bottom: 2rem;
+        text-align: center;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #374151;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+        transition: all 0.3s;
+        background: #f9fafb;
+    }
+
+    input:focus {
+        outline: none;
+        border-color: #2563eb;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-errors {
+        color: #dc2626;
+        font-size: 0.875rem;
+        margin-top: 0.4rem;
+    }
+
+    .form-group.error input {
+        border-color: #dc2626;
+        background: #fef2f2;
+    }
+
+    button {
+        width: 100%;
+        padding: 0.875rem;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    button:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+
+    .login-link {
+        text-align: center;
+        margin-top: 1.5rem;
+        color: #6b7280;
+        font-size: 0.95rem;
+    }
+
+    .login-link a {
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .login-link a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Create Your Account</h2>
+
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="form-group {% if form.username.errors %}error{% endif %}">
+            {{ form.username.label }}
+            {{ form.username(placeholder="Choose a username") }}
+            {% if form.username.errors %}
+                <div class="form-errors">
+                    {% for error in form.username.errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {% if form.email.errors %}error{% endif %}">
+            {{ form.email.label }}
+            {{ form.email(type="email", placeholder="your@email.com") }}
+            {% if form.email.errors %}
+                <div class="form-errors">
+                    {% for error in form.email.errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {% if form.password.errors %}error{% endif %}">
+            {{ form.password.label }}
+            {{ form.password(placeholder="At least 8 characters") }}
+            {% if form.password.errors %}
+                <div class="form-errors">
+                    {% for error in form.password.errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {% if form.password_confirm.errors %}error{% endif %}">
+            {{ form.password_confirm.label }}
+            {{ form.password_confirm(placeholder="Confirm your password") }}
+            {% if form.password_confirm.errors %}
+                <div class="form-errors">
+                    {% for error in form.password_confirm.errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        {{ form.submit() }}
+    </form>
+
+    <div class="login-link">
+        Already have an account? <a href="{{ url_for('login') }}">Sign in here</a>
+    </div>
+</div>
+{% endblock %}
+

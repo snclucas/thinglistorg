@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Group Member - ThingList{% endblock %}
+
+{% block meta_description %}Edit member role and permissions in your ThingList group. Manage user access and collaboration settings.{% endblock %}
+
+{% block meta_keywords %}edit member, member permissions, role management, user access{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Edit Group Member - ThingList{% endblock %}
+
+{% block og_description %}Edit member roles and permissions in your group.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='forms.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="modern-animate-in">
+    <div class="form-container">
+        <div class="form-header">
+            <h1 class="form-title">Edit Member Role</h1>
+            <p class="form-subtitle">
+                <span class="member-name">{{ member.user.username }}</span>
+                <span class="divider">in</span>
+                <span class="group-name">{{ group.name }}</span>
+            </p>
+        </div>
+
+        <form method="POST" class="modern-form" novalidate>
+            {{ form.hidden_tag() }}
+
+            <!-- Current Permissions Card -->
+            <div class="modern-card permissions-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-check"></i>
+                        Current Permissions
+                    </h3>
+                </div>
+                <div class="permissions-list">
+                    <div class="permission-item {{ 'active' if member.can_view() else 'inactive' }}">
+                        <i class="fas fa-eye"></i>
+                        <span>Can View</span>
+                    </div>
+                    <div class="permission-item {{ 'active' if member.can_edit() else 'inactive' }}">
+                        <i class="fas fa-edit"></i>
+                        <span>Can Edit</span>
+                    </div>
+                    <div class="permission-item {{ 'active' if member.can_manage() else 'inactive' }}">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24">
+                            <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                        </svg>
+                        <span>Can Manage</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Role Field -->
+            <div class="form-group">
+                <label for="role" class="form-label">Role *</label>
+                {{ form.role(class="form-select") }}
+                <div class="role-description">
+                    <div class="role-info">
+                        <strong>Admin:</strong>
+                        <span>Can manage members and create/edit lists</span>
+                    </div>
+                    <div class="role-info">
+                        <strong>Member:</strong>
+                        <span>Can view and edit lists (depends on group settings)</span>
+                    </div>
+                    <div class="role-info">
+                        <strong>Viewer:</strong>
+                        <span>Can only view lists and items</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                {{ form.submit(class="modern-btn modern-btn-primary modern-btn-lg", value="Update Role") }}
+                <a href="{{ url_for('view_group', group_id=group.id) }}" class="modern-btn modern-btn-secondary modern-btn-lg">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .form-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .form-subtitle {
+        font-size: 1rem;
+        color: var(--gray-600);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .member-name {
+        font-weight: 600;
+        color: var(--primary-600);
+    }
+
+    .group-name {
+        font-weight: 600;
+        color: var(--gray-900);
+    }
+
+    .divider {
+        color: var(--gray-400);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--gray-900);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+        font-family: inherit;
+        transition: all var(--transition-fast);
+    }
+
+    .form-select:focus {
+        outline: none;
+        border-color: var(--primary-500);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .permissions-card {
+        margin-bottom: 2rem;
+        border: 1px solid var(--gray-200);
+    }
+
+    .permissions-list {
+        padding: 1.5rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+    }
+
+    .permission-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        text-align: center;
+        font-size: 0.875rem;
+        transition: all var(--transition-fast);
+    }
+
+    .permission-item.active {
+        background: rgba(34, 197, 94, 0.05);
+        color: var(--green-700);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .permission-item.inactive {
+        background: var(--gray-50);
+        color: var(--gray-500);
+        border: 1px solid var(--gray-200);
+    }
+
+    .role-description {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: var(--radius-md);
+        border-left: 3px solid var(--primary-500);
+    }
+
+    .role-info {
+        display: grid;
+        grid-template-columns: 100px 1fr;
+        gap: 0.75rem;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .role-info:last-child {
+        margin-bottom: 0;
+    }
+
+    .role-info strong {
+        color: var(--gray-900);
+    }
+
+    .role-info span {
+        color: var(--gray-600);
+    }
+
+    .form-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 2rem;
+    }
+
+    .modern-btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        min-height: 44px;
+    }
+
+    @media (max-width: 768px) {
+        .form-container {
+            margin: 1rem auto;
+        }
+
+        .form-title {
+            font-size: 1.5rem;
+        }
+
+        .form-subtitle {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .permissions-list {
+            grid-template-columns: 1fr;
+        }
+
+        .role-info {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+

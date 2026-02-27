@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Edit List - ThingList{% endblock %}
+
+{% block meta_description %}Edit your inventory list on ThingList. Update list information and settings.{% endblock %}
+
+{% block meta_keywords %}edit list, update list, list settings{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Edit List - ThingList{% endblock %}
+
+{% block og_description %}Edit and manage your inventory list settings.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        background: white;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+    }
+
+    .form-container h1 {
+        color: #2563eb;
+        margin-bottom: 2rem;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #374151;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    textarea, input[type="text"] {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+        transition: all 0.3s;
+        background: #f9fafb;
+        font-family: inherit;
+    }
+
+    textarea:focus, input[type="text"]:focus {
+        outline: none;
+        border-color: #2563eb;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+        transition: all 0.3s;
+        background: #f9fafb;
+        font-family: inherit;
+    }
+
+    select:focus {
+        outline: none;
+        border-color: #2563eb;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .help-text {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 0.25rem;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    button, .btn-cancel {
+        flex: 1;
+        padding: 0.875rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        text-align: center;
+    }
+
+    button[type="submit"] {
+        background: #2563eb;
+        color: white;
+    }
+
+    button[type="submit"]:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-cancel {
+        background: #f3f4f6;
+        color: #333;
+    }
+
+    .btn-cancel:hover {
+        background: #e5e7eb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>✏️ Edit List</h1>
+
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="form-group">
+            <label for="name">List Name *</label>
+            <input type="text" id="name" name="name" value="{{ list.name }}" required placeholder="e.g., Kitchen Supplies" autofocus>
+            <div class="help-text">Give your inventory list a descriptive name</div>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" placeholder="Add a detailed description of what this list is for...">{{ list.description or '' }}</textarea>
+            <div class="help-text">Optional: Describe the purpose or contents of this list</div>
+        </div>
+
+        <div class="form-group">
+            <label for="tags">Tags</label>
+            <input type="text" id="tags" name="tags" value="{{ list.tags or '' }}" placeholder="e.g., kitchen, urgent, supplies">
+            <div class="help-text">Comma-separated tags to help organize and find your lists</div>
+        </div>
+
+        <div class="form-group">
+            <label for="visibility">Visibility *</label>
+            <select id="visibility" name="visibility" required>
+                <option value="private" {% if list.visibility == 'private' %}selected{% endif %}>🔒 Private (Only me)</option>
+                <option value="public" {% if list.visibility == 'public' %}selected{% endif %}>🌐 Public (Searchable)</option>
+                <option value="hidden" {% if list.visibility == 'hidden' %}selected{% endif %}>🔗 Hidden (Link only)</option>
+            </select>
+            <div class="help-text">
+                <strong>Private:</strong> Only you can see this list<br>
+                <strong>Public:</strong> Appears in searches and accessible via link<br>
+                <strong>Hidden:</strong> Not searchable but accessible via direct link
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button type="submit">Save Changes</button>
+            <a href="{{ url_for('share_list', list_id=list.id) }}" class="btn-cancel" style="background: #10b981; color: white;">Share</a>
+            <a href="{{ url_for('view_list', list_id=list.id) }}" class="btn-cancel">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

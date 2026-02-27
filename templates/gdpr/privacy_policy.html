@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy - ThingList{% endblock %}
+
+{% block meta_description %}Privacy Policy for ThingList. Learn how we protect your personal data and comply with GDPR.{% endblock %}
+
+{% block og_title %}Privacy Policy - ThingList{% endblock %}
+
+{% block extra_css %}
+<style>
+    .policy-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        background: white;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .policy-container h1 {
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+        font-size: 2rem;
+        font-weight: 600;
+    }
+
+    .policy-date {
+        color: #6b7280;
+        margin-bottom: 2rem;
+        font-size: 0.9rem;
+    }
+
+    .policy-container h2 {
+        color: #2563eb;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        font-size: 1.4rem;
+        font-weight: 600;
+        border-top: 2px solid #e5e7eb;
+        padding-top: 1rem;
+    }
+
+    .policy-container h2:first-of-type {
+        border-top: none;
+        padding-top: 0;
+        margin-top: 0;
+    }
+
+    .policy-container h3 {
+        color: #1f2937;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .policy-container p {
+        color: #4b5563;
+        margin-bottom: 1rem;
+        line-height: 1.6;
+    }
+
+    .policy-container ul {
+        margin: 1rem 0 1rem 2rem;
+        color: #4b5563;
+    }
+
+    .policy-container li {
+        margin-bottom: 0.5rem;
+        line-height: 1.6;
+    }
+
+    .highlight-box {
+        background: #f0fdf4;
+        border-left: 4px solid #16a34a;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border-radius: 4px;
+    }
+
+    .highlight-box strong {
+        color: #15803d;
+    }
+
+    .info-box {
+        background: #f0f4ff;
+        border-left: 4px solid #2563eb;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border-radius: 4px;
+    }
+
+    .toc {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border-radius: 6px;
+    }
+
+    .toc h3 {
+        margin-top: 0;
+        color: #1f2937;
+    }
+
+    .toc ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .toc li {
+        margin: 0.5rem 0;
+    }
+
+    .toc a {
+        color: #2563eb;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+
+    .toc a:hover {
+        color: #1d4ed8;
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="policy-container">
+    <h1>🔒 Privacy Policy</h1>
+    <p class="policy-date">Last updated: February 27, 2026</p>
+
+    <div class="toc">
+        <h3>📑 Table of Contents</h3>
+        <ul>
+            <li><a href="#introduction">1. Introduction</a></li>
+            <li><a href="#data-we-collect">2. Information We Collect</a></li>
+            <li><a href="#how-we-use">3. How We Use Your Data</a></li>
+            <li><a href="#data-storage">4. Data Storage & Security</a></li>
+            <li><a href="#your-rights">5. Your GDPR Rights</a></li>
+            <li><a href="#data-retention">6. Data Retention</a></li>
+            <li><a href="#changes">7. Changes to This Policy</a></li>
+            <li><a href="#contact">8. Contact Us</a></li>
+        </ul>
+    </div>
+
+    <h2 id="introduction">1. Introduction</h2>
+    <p>
+        ThingList ("we," "us," "our," or "Company") is committed to protecting your privacy and ensuring you have a positive experience on our platform. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website and services.
+    </p>
+    <p>
+        We comply with the General Data Protection Regulation (GDPR) and other applicable privacy laws. Please read this privacy policy carefully. If you do not agree with our policies and practices, please do not use our services.
+    </p>
+
+    <h2 id="data-we-collect">2. Information We Collect</h2>
+
+    <h3>Account Information</h3>
+    <p>When you create an account, we collect:</p>
+    <ul>
+        <li>Username and email address</li>
+        <li>Password (stored as a secure hash)</li>
+        <li>Account creation and update dates</li>
+        <li>User preferences and settings</li>
+    </ul>
+
+    <h3>Content Data</h3>
+    <p>When you use ThingList, we collect:</p>
+    <ul>
+        <li>Inventory lists you create</li>
+        <li>Items and their details (name, description, quantity, etc.)</li>
+        <li>Tags, categories, and custom fields</li>
+        <li>Images and attachments you upload</li>
+        <li>List sharing and permission information</li>
+    </ul>
+
+    <h3>Activity Data</h3>
+    <p>We collect information about your interactions with our platform:</p>
+    <ul>
+        <li>Audit logs of your actions</li>
+        <li>Group memberships and collaborations</li>
+        <li>List shares and permissions</li>
+        <li>Notifications and communication history</li>
+    </ul>
+
+    <h3>Technical Data</h3>
+    <p>When you use our service, we automatically collect:</p>
+    <ul>
+        <li>IP address and browser information</li>
+        <li>Device information</li>
+        <li>Access logs and timestamps</li>
+        <li>Session information</li>
+    </ul>
+
+    <h2 id="how-we-use">3. How We Use Your Data</h2>
+    <p>We use the information we collect for the following purposes:</p>
+    <ul>
+        <li><strong>Service Provision:</strong> To create and maintain your account and deliver the services you request</li>
+        <li><strong>Personalization:</strong> To customize your experience and preferences</li>
+        <li><strong>Communication:</strong> To send you service-related announcements and support messages</li>
+        <li><strong>Security:</strong> To protect against fraudulent, malicious, or unauthorized activity</li>
+        <li><strong>Compliance:</strong> To meet legal obligations and regulatory requirements</li>
+        <li><strong>Improvements:</strong> To analyze usage patterns and improve our services</li>
+    </ul>
+
+    <div class="info-box">
+        <strong>Legal Basis:</strong> We process your personal data based on your consent, the necessity to provide our services, and our legitimate interests in securing and improving our platform.
+    </div>
+
+    <h2 id="data-storage">4. Data Storage & Security</h2>
+
+    <h3>Where We Store Your Data</h3>
+    <p>
+        Your data is stored on our secure servers. We use industry-standard encryption and security measures to protect your information both in transit and at rest.
+    </p>
+
+    <h3>Security Measures</h3>
+    <ul>
+        <li>SSL/TLS encryption for data in transit</li>
+        <li>Secure password hashing using industry-standard algorithms</li>
+        <li>Access controls and authentication mechanisms</li>
+        <li>Regular security audits and monitoring</li>
+        <li>CSRF protection on all forms</li>
+    </ul>
+
+    <div class="highlight-box">
+        <strong>Important:</strong> While we implement robust security measures, no method of transmission over the Internet is 100% secure. We cannot guarantee absolute security of your data.
+    </div>
+
+    <h2 id="your-rights">5. Your GDPR Rights</h2>
+    <p>
+        Under GDPR, you have the following rights regarding your personal data:
+    </p>
+
+    <h3>Right of Access</h3>
+    <p>
+        You have the right to request a copy of the personal data we hold about you. You can download your data at any time from your profile using the "Export My Data" feature.
+    </p>
+
+    <h3>Right to Rectification</h3>
+    <p>
+        You have the right to correct any inaccurate or incomplete personal data. You can update your account information directly from your profile.
+    </p>
+
+    <h3>Right to Erasure (Right to be Forgotten)</h3>
+    <p>
+        You have the right to request deletion of your personal data. You can delete your account and all associated data from the account settings. We will permanently delete your data within 30 days of your request.
+    </p>
+
+    <h3>Right to Data Portability</h3>
+    <p>
+        You have the right to receive your personal data in a structured, commonly used, and machine-readable format. Use the "Export My Data" feature to download your data as JSON.
+    </p>
+
+    <h3>Right to Object</h3>
+    <p>
+        You have the right to object to our processing of your personal data. Please contact us to exercise this right.
+    </p>
+
+    <h3>Right to Withdraw Consent</h3>
+    <p>
+        You can withdraw your consent at any time by deleting your account or contacting us.
+    </p>
+
+    <h2 id="data-retention">6. Data Retention</h2>
+    <p>
+        We retain your personal data for as long as your account is active or as needed to provide our services. When you delete your account:
+    </p>
+    <ul>
+        <li>Your personal data is permanently deleted</li>
+        <li>All your lists and items are removed</li>
+        <li>Your groups are deleted if you are the owner</li>
+        <li>Shared permissions are revoked</li>
+        <li>Deletion is permanent and cannot be reversed</li>
+    </ul>
+    <p>
+        We may retain aggregate, anonymized data for statistical and analytical purposes.
+    </p>
+
+    <h2 id="changes">7. Changes to This Policy</h2>
+    <p>
+        We may update this Privacy Policy from time to time to reflect changes in our practices, technology, legal requirements, and other factors. We will notify you of significant changes by updating the "Last Updated" date at the top of this policy and, if required, by prominently displaying notice on our website.
+    </p>
+    <p>
+        Your continued use of ThingList following the posting of a revised Privacy Policy means you accept and agree to the changes.
+    </p>
+
+    <h2 id="contact">8. Contact Us</h2>
+    <p>
+        If you have questions about this Privacy Policy, our privacy practices, or wish to exercise your GDPR rights, please contact us:
+    </p>
+    <div class="info-box">
+        <p style="margin: 0;">
+            <strong>Email:</strong> privacy@thinglist.com<br>
+            <strong>Subject:</strong> Privacy Policy Inquiry<br>
+            <br>
+            We will respond to your inquiry within 30 days or as required by law.
+        </p>
+    </div>
+
+    <h3>Data Protection Officer</h3>
+    <p>
+        Our Data Protection Officer can be reached for data protection concerns and to help you exercise your GDPR rights.
+    </p>
+
+    <div class="highlight-box">
+        <p style="margin: 0;">
+            <strong>Your privacy is important to us.</strong> ThingList is committed to transparent and responsible data practices that respect your rights and protect your information.
+        </p>
+    </div>
+</div>
+{% endblock %}
+

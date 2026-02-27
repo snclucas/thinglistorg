@@ -1,0 +1,116 @@
+/* Error Pages Styles */
+
+.error-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px);
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+}
+
+.error-card {
+    background: white;
+    padding: 3rem 2rem;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+}
+
+.error-icon {
+    font-size: 5rem;
+    margin-bottom: 1.5rem;
+    color: var(--danger);
+}
+
+.error-code {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--danger);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.05em;
+}
+
+.error-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 1rem;
+}
+
+.error-message {
+    color: var(--gray-600);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.error-btn {
+    padding: 0.875rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    display: inline-block;
+    font-size: 0.9375rem;
+    cursor: pointer;
+}
+
+.error-btn-primary {
+    background: var(--primary-600);
+    color: white;
+}
+
+.error-btn-primary:hover {
+    background: var(--primary-700);
+    transform: translateY(-2px);
+}
+
+.error-btn-secondary {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-300);
+}
+
+.error-btn-secondary:hover {
+    background: var(--gray-200);
+}
+
+.error-illustration {
+    margin-bottom: 2rem;
+    opacity: 0.8;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .error-card {
+        padding: 2rem 1.5rem;
+    }
+
+    .error-code {
+        font-size: 2.5rem;
+    }
+
+    .error-title {
+        font-size: 1.5rem;
+    }
+
+    .error-actions {
+        flex-direction: column;
+    }
+
+    .error-btn {
+        width: 100%;
+    }
+}
+

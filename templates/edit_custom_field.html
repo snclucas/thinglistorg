@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Custom Field - {{ list.name }} - ThingList{% endblock %}
+
+{% block meta_description %}Edit custom field settings for {{ list.name }} on ThingList. Manage field properties and options.{% endblock %}
+
+{% block meta_keywords %}edit custom field, field settings, custom field management{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Edit Custom Field - ThingList{% endblock %}
+
+{% block og_description %}Edit custom field settings for your inventory list.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-container {
+        max-width: 600px;
+        margin: 2rem auto;
+    }
+
+    .edit-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .edit-header {
+        margin-bottom: 2rem;
+    }
+
+    .edit-header h1 {
+        color: #1f2937;
+        margin: 0 0 0.5rem 0;
+        font-size: 1.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .edit-subtitle {
+        color: #6b7280;
+        font-size: 1rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+        box-sizing: border-box;
+        transition: all 0.3s;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-help-text {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 0.5rem;
+    }
+
+    .field-info {
+        background: #f3f4f6;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1.5rem;
+    }
+
+    .field-info-row {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 1rem;
+        margin-bottom: 0.75rem;
+        align-items: center;
+    }
+
+    .field-info-label {
+        font-weight: 600;
+        color: #2563eb;
+        font-size: 0.875rem;
+    }
+
+    .field-info-value {
+        color: #1f2937;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 1rem;
+    }
+
+    .btn-primary {
+        background: #2563eb;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #333;
+        border: 1px solid #d1d5db;
+    }
+
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        transform: translateY(-2px);
+    }
+
+    .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        font-size: 0.9375rem;
+    }
+
+    .breadcrumb a {
+        color: #2563eb;
+        text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+        text-decoration: underline;
+    }
+
+    .breadcrumb span {
+        color: #6b7280;
+    }
+
+    .alert {
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1.5rem;
+    }
+
+    .alert-info {
+        background: #f0f4ff;
+        border-left: 4px solid #2563eb;
+        color: #1e3a8a;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-container modern-animate-in">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+        <a href="{{ url_for('lists') }}">📋 My Lists</a>
+        <span>/</span>
+        <a href="{{ url_for('view_list', list_id=list.id) }}">{{ list.name }}</a>
+        <span>/</span>
+        <a href="{{ url_for('list_settings', list_id=list.id) }}">Settings</a>
+        <span>/</span>
+        <span>Edit Field</span>
+    </div>
+
+    <!-- Edit Card -->
+    <div class="edit-card">
+        <!-- Header -->
+        <div class="edit-header">
+            <h1>
+                <i class="fas fa-edit"></i>
+                Edit Custom Field
+            </h1>
+            <p class="edit-subtitle">Rename the custom field in this list</p>
+        </div>
+
+        <!-- Field Information -->
+        <div class="alert alert-info">
+            <strong>ℹ️ Field Details</strong>
+            <p style="margin: 0.5rem 0 0 0;">This field will be renamed across all items that use it.</p>
+        </div>
+
+        <!-- Field Info -->
+        <div class="field-info">
+            <div class="field-info-row">
+                <span class="field-info-label">Current Name:</span>
+                <span class="field-info-value">{{ field.name }}</span>
+            </div>
+            <div class="field-info-row">
+                <span class="field-info-label">Type:</span>
+                <span class="field-info-value">
+                    {% if field.field_type == 'text' %}
+                        Text Input
+                    {% elif field.field_type == 'boolean' %}
+                        Yes/No Toggle
+                    {% elif field.field_type == 'options' %}
+                        Select Options
+                    {% endif %}
+                </span>
+            </div>
+            {% if field.field_type == 'options' %}
+            <div class="field-info-row">
+                <span class="field-info-label">Options:</span>
+                <span class="field-info-value">{{ field.get_options()|join(', ') }}</span>
+            </div>
+            {% endif %}
+            <div class="field-info-row">
+                <span class="field-info-label">Status:</span>
+                <span class="field-info-value">
+                    {% if field.is_visible %}👁️ Visible{% else %}🚫 Hidden{% endif %}
+                    {% if field.is_editable %}✏️ Editable{% else %}🔒 Read-only{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <!-- Edit Form -->
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="form-group">
+                <label class="form-label" for="field_name">New Field Name *</label>
+                <input
+                    type="text"
+                    id="field_name"
+                    name="field_name"
+                    class="form-input"
+                    placeholder="e.g., Color, Size, SKU"
+                    value="{{ field.name }}"
+                    required
+                    autofocus
+                >
+                <p class="form-help-text">Enter the new name for this custom field. Must be unique within this list.</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-check"></i>
+                    Save Changes
+                </button>
+                <a href="{{ url_for('list_settings', list_id=list.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

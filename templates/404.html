@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found (404) - ThingList{% endblock %}
+
+{% block meta_description %}The page you're looking for doesn't exist on ThingList. Return to home or browse available lists.{% endblock %}
+
+{% block meta_keywords %}404 error, page not found, error page{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Page Not Found - ThingList{% endblock %}
+
+{% block og_description %}The requested page could not be found.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .error-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        color: #333;
+        text-align: center;
+    }
+
+    .error-code {
+        font-size: 8rem;
+        font-weight: bold;
+        color: #2563eb;
+        opacity: 0.9;
+    }
+
+    .error-message {
+        font-size: 1.8rem;
+        margin: 1rem 0;
+        color: #1f2937;
+        font-weight: 600;
+    }
+
+    .error-description {
+        font-size: 1.05rem;
+        margin: 1rem 0 2rem;
+        color: #666;
+        max-width: 500px;
+    }
+
+    .btn {
+        padding: 0.875rem 2.5rem;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-code">404</div>
+    <div class="error-message">Page Not Found</div>
+    <div class="error-description">The page you're looking for doesn't exist or has been moved.</div>
+    <a href="{{ url_for('index') }}" class="btn">Go Home</a>
+</div>
+{% endblock %}
+

@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Import Items - {{ list.name }} - ThingList{% endblock %}
+
+{% block meta_description %}Import items into {{ list.name }} on ThingList. Upload CSV or JSON files to add multiple items at once.{% endblock %}
+
+{% block meta_keywords %}import items, bulk import, CSV import, JSON import, item import{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Import Items - ThingList{% endblock %}
+
+{% block og_description %}Import items into your inventory list on ThingList.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .import-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .import-header {
+        margin-bottom: 2rem;
+    }
+
+    .import-header h1 {
+        color: #2563eb;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .import-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-group input[type="file"],
+    .form-group select {
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+
+    .form-group input[type="file"]:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .file-info {
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+
+    .conflict-section {
+        background: #f3f4f6;
+        padding: 1.5rem;
+        border-radius: 6px;
+    }
+
+    .conflict-section h3 {
+        color: #374151;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+
+    .radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .radio-option {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .radio-option input[type="radio"] {
+        margin-top: 0.25rem;
+        cursor: pointer;
+        accent-color: #2563eb;
+    }
+
+    .radio-option label {
+        margin: 0;
+        cursor: pointer;
+        flex: 1;
+    }
+
+    .radio-option-title {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .radio-option-desc {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .btn {
+        flex: 1;
+        padding: 0.875rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-primary {
+        background: #2563eb;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #333;
+    }
+
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        transform: translateY(-2px);
+    }
+
+    .help-text {
+        background: #eff6ff;
+        border-left: 4px solid #2563eb;
+        padding: 1rem;
+        border-radius: 4px;
+        color: #1e40af;
+        margin-top: 1.5rem;
+    }
+
+    .help-text strong {
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .help-text ul {
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+
+    .help-text li {
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="import-container">
+    <div class="import-header">
+        <h1>
+            <i class="fas fa-upload"></i>
+            Import Items
+        </h1>
+        <p style="color: #6b7280; margin: 0;">Import items into <strong>{{ list.name }}</strong></p>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="import-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <!-- File Upload -->
+        <div class="form-group">
+            <label for="import_file">
+                <i class="fas fa-file"></i> Select File (CSV or JSON)
+            </label>
+            <input type="file" id="import_file" name="import_file" accept=".csv,.json" required>
+            <div class="file-info">
+                <i class="fas fa-info-circle"></i>
+                Supported formats: .csv, .json
+            </div>
+        </div>
+
+        <!-- Conflict Resolution -->
+        <div class="conflict-section">
+            <h3>When Item Already Exists</h3>
+            <p style="color: #6b7280; margin-top: 0; margin-bottom: 1rem;">
+                Items are identified by their unique ID. Choose what to do when an item with the same ID already exists:
+            </p>
+            <div class="radio-group">
+                <div class="radio-option">
+                    <input type="radio" id="ignore" name="conflict_action" value="ignore" checked>
+                    <label for="ignore">
+                        <div class="radio-option-title">
+                            <i class="fas fa-minus-circle" style="color: #6b7280;"></i>
+                            Skip Existing Items
+                        </div>
+                        <div class="radio-option-desc">
+                            Keep the current item, don't update it with imported data
+                        </div>
+                    </label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="overwrite" name="conflict_action" value="overwrite">
+                    <label for="overwrite">
+                        <div class="radio-option-title">
+                            <i class="fas fa-sync-alt" style="color: #2563eb;"></i>
+                            Overwrite Existing Items
+                        </div>
+                        <div class="radio-option-desc">
+                            Replace current item data with imported data
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Text -->
+        <div class="help-text">
+            <strong><i class="fas fa-lightbulb"></i> File Format Requirements</strong>
+            <ul>
+                <li>CSV: First row should contain column headers including "unique_id"</li>
+                <li>JSON: Should have "items" array with objects containing item data</li>
+                <li>Always include "unique_id" to enable duplicate detection</li>
+                <li>Other fields: name, description, notes, tags, item_type, location, quantity, etc.</li>
+            </ul>
+        </div>
+
+        <!-- Buttons -->
+        <div class="button-group">
+            <a href="{{ url_for('view_list', list_id=list.id) }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-upload"></i> Import Items
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

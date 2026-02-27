@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="white">
+    <title>{% block title %}ThingList - Organize Your Inventory{% endblock %}</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="{% block meta_description %}ThingList - The ultimate inventory management system. Create lists, organize items, track quantities, and share with your team.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}inventory management, list management, item tracking, organization tool, todo list, task management{% endblock %}">
+    <meta name="author" content="ThingList">
+    <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}">
+    <meta name="language" content="English">
+    <meta name="revisit-after" content="7 days">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{% block canonical_url %}{{ request.base_url }}{% endblock %}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{% block og_url %}{{ request.base_url }}{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}ThingList - Organize Your Inventory{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}The ultimate inventory management system for organizing lists, items, and teams.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ request.base_url }}static/og-image.png{% endblock %}">
+    <meta property="og:site_name" content="ThingList">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{% block twitter_url %}{{ request.base_url }}{% endblock %}">
+    <meta property="twitter:title" content="{% block twitter_title %}ThingList - Organize Your Inventory{% endblock %}">
+    <meta property="twitter:description" content="{% block twitter_description %}The ultimate inventory management system for organizing lists, items, and teams.{% endblock %}">
+    <meta property="twitter:image" content="{% block twitter_image %}{{ request.base_url }}static/og-image.png{% endblock %}">
+
+    <!-- Additional SEO -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-title" content="ThingList">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='modern-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='mobile-responsive.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: var(--gray-50);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--gray-900);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            width: 100%;
+        }
+
+        nav {
+            flex-shrink: 0;
+        }
+
+        footer {
+            margin-top: auto !important;
+            flex-shrink: 0;
+        }
+
+        /* Font Awesome Icon Styling */
+        .icon,
+        i.fa,
+        i.fas,
+        i.far {
+            display: inline-block;
+            font-style: normal;
+            color: inherit;
+        }
+
+        /* SVG icons for backward compatibility */
+        svg {
+            display: none; /* Hide SVG icons, use Font Awesome instead */
+        }
+
+        /* Navigation Icons */
+        .nav-link-icon {
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Ensure icons inherit colors properly */
+        .modern-btn i,
+        .nav-link i {
+            color: inherit;
+        }
+
+        button .icon,
+        .modern-btn .icon {
+            color: currentColor;
+        }
+
+        a .icon {
+            color: inherit;
+        }
+
+        a .icon:hover {
+            color: var(--primary-600);
+        }
+
+
+
+        /* Modern Flat Navigation */
+        nav {
+            background: white;
+            padding: 0;
+            border-bottom: 1px solid var(--gray-200);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 0;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary-600);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        .nav-brand:hover {
+            color: var(--primary-700);
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .nav-menu-right {
+            margin-left: auto;
+        }
+
+        .nav-user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+            margin-right: 1rem;
+            cursor: pointer;
+            position: relative;
+            transition: all var(--transition-fast);
+        }
+
+        .nav-user-info:hover {
+            background: var(--gray-100);
+        }
+
+        .nav-user-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-100);
+            color: var(--primary-600);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .nav-user-name {
+            color: var(--gray-700);
+            font-size: 0.9375rem;
+            font-weight: 500;
+        }
+
+        .nav-user-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            min-width: 180px;
+            margin-top: 0.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all var(--transition-fast);
+            z-index: 1001;
+        }
+
+        .nav-user-info.active .nav-user-dropdown,
+        .nav-user-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-user-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--gray-700);
+            text-decoration: none;
+            font-size: 0.9375rem;
+            transition: all var(--transition-fast);
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .nav-user-dropdown-item:first-child {
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+
+        .nav-user-dropdown-item:last-child {
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        }
+
+        .nav-user-dropdown-item:hover {
+            background: var(--gray-50);
+            color: var(--primary-600);
+        }
+
+        .nav-user-dropdown-divider {
+            height: 1px;
+            background: var(--gray-200);
+            margin: 0.5rem 0;
+        }
+
+        .nav-user-dropdown-item.logout {
+            color: var(--danger);
+        }
+
+        .nav-user-dropdown-item.logout:hover {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            color: var(--gray-600);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            font-size: 0.9375rem;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .nav-link:hover {
+            background: var(--gray-100);
+            color: var(--gray-900);
+        }
+
+        .nav-link.active {
+            background: var(--primary-50);
+            color: var(--primary-600);
+        }
+
+        .nav-link-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2.5rem 2rem;
+            flex: 1;
+            width: 100%;
+        }
+
+        /* Modern Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-width: 400px;
+            pointer-events: none;
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-lg);
+            animation: slideInRight 0.3s ease;
+            border: 1px solid;
+            font-size: 0.9375rem;
+            box-shadow: var(--shadow-lg);
+            pointer-events: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .toast::before {
+            content: '';
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            display: block;
+        }
+
+        .toast-success {
+            background: linear-gradient(135deg, var(--success-light), #dcfce7);
+            border-color: var(--success);
+            color: #166534;
+        }
+
+        .toast-success::before {
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2310b981'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 13l4 4L19 7'%3E%3C/path%3E%3C/svg%3E") center/contain no-repeat;
+        }
+
+        .toast-error {
+            background: linear-gradient(135deg, var(--danger-light), #fee2e2);
+            border-color: var(--danger);
+            color: #991b1b;
+        }
+
+        .toast-error::before {
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ef4444'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'%3E%3C/path%3E%3C/svg%3E") center/contain no-repeat;
+        }
+
+        .toast-info {
+            background: linear-gradient(135deg, var(--info-light), #dbeafe);
+            border-color: var(--info);
+            color: #1e40af;
+        }
+
+        .toast-info::before {
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233b82f6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'%3E%3C/path%3E%3C/svg%3E") center/contain no-repeat;
+        }
+
+        .toast-warning {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+
+        .toast-warning::before {
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f59e0b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'%3E%3C/path%3E%3C/svg%3E") center/contain no-repeat;
+        }
+
+        .toast.hide {
+            animation: slideOutRight 0.3s ease forwards;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(400px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(400px);
+            }
+        }
+
+        /* Backward compatibility - hide old alerts */
+        .alert {
+            display: none;
+        }
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-container {
+                padding: 0 1rem;
+            }
+
+            .nav-menu {
+                flex-wrap: wrap;
+                gap: 0.25rem;
+            }
+
+            .nav-user-info {
+                width: 100%;
+                order: -1;
+                margin: 0.5rem 0;
+            }
+
+            .nav-link {
+                padding: 0.625rem 0.75rem;
+                font-size: 0.875rem;
+            }
+
+            .container {
+                padding: 2rem 1rem;
+            }
+        }
+
+
+    </style>
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="nav-brand">
+                <i class="fas fa-list"></i>
+                <span>ThingList</span>
+            </a>
+            <div class="nav-menu">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('search') }}" class="nav-link">
+                        <i class="fas fa-search"></i>
+                        <span>Search</span>
+                    </a>
+                    <a href="{{ url_for('lists') }}" class="nav-link">
+                        <i class="fas fa-list"></i>
+                        <span>Lists</span>
+                    </a>
+                    <a href="{{ url_for('view_groups') }}" class="nav-link">
+                        <i class="fas fa-users"></i>
+                        <span>Groups</span>
+                    </a>
+                    <a href="{{ url_for('public_lists') }}" class="nav-link">
+                        <i class="fas fa-globe"></i>
+                        <span>Public Lists</span>
+                    </a>
+                    <div class="nav-user-info nav-menu-right" id="userMenuToggle">
+                        <div class="nav-user-icon">{{ current_user.username[0]|upper }}</div>
+                        <span class="nav-user-name">{{ current_user.username }}</span>
+                        <div class="nav-user-dropdown" id="userDropdown">
+                            <a href="{{ url_for('dashboard') }}" class="nav-user-dropdown-item">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Dashboard</span>
+                            </a>
+                            <a href="{{ url_for('profile') }}" class="nav-user-dropdown-item">
+                                <i class="fas fa-user-circle"></i>
+                                <span>Profile</span>
+                            </a>
+                                <a href="{{ url_for('view_notifications') }}" class="nav-user-dropdown-item">
+                                <i class="fas fa-bell"></i>
+                                <span>Notifications</span>
+                                {% if unread_notifications_count is defined and unread_notifications_count > 0 %}
+                                    <span style="background: #ef4444; color: white; padding: 0.25rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-left: auto;">{{ unread_notifications_count }}</span>
+                                {% endif %}
+                            </a>
+                            <div class="nav-user-dropdown-divider"></div>
+                            <a href="{{ url_for('logout') }}" class="nav-user-dropdown-item logout">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('public_lists') }}" class="nav-link">
+                        <i class="fas fa-globe"></i>
+                        <span>Public Lists</span>
+                    </a>
+                    <a href="{{ url_for('search') }}" class="nav-link">
+                        <i class="fas fa-search"></i>
+                        <span>Search</span>
+                    </a>
+                    <a href="{{ url_for('login') }}" class="nav-link">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Login</span>
+                    </a>
+                    <a href="{{ url_for('register') }}" class="nav-link">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Register</span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Toast Container -->
+        <div class="toast-container" id="toastContainer"></div>
+
+        <!-- Hidden flash messages container (for server-side messages) -->
+        <div id="flashMessages" style="display: none;">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div data-type="{{ category }}" data-message="{{ message }}"></div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        {% block content %}{% endblock %}
+
+        <!-- Footer with GDPR Links -->
+        <footer style="background: var(--gray-900); color: white; margin-top: auto; padding: 2rem; border-top: 1px solid var(--gray-800);">
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+                    <!-- Company Info -->
+                    <div>
+                        <h3 style="margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600;">ThingList</h3>
+                        <p style="color: var(--gray-400); font-size: 0.9rem; line-height: 1.6;">
+                            The ultimate inventory management system. Organize lists, track items, and collaborate with your team.
+                        </p>
+                    </div>
+
+                    <!-- Product Links -->
+                    <div>
+                        <h4 style="margin-bottom: 1rem; font-weight: 600;">Product</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom: 0.5rem;">
+                                <a href="{{ url_for('dashboard') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Dashboard</a>
+                            </li>
+                            <li style="margin-bottom: 0.5rem;">
+                                <a href="{{ url_for('create_list') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Create List</a>
+                            </li>
+                            <li style="margin-bottom: 0.5rem;">
+                                <a href="{{ url_for('view_groups') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Groups</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- GDPR & Compliance -->
+                    <div>
+                        <h4 style="margin-bottom: 1rem; font-weight: 600;">GDPR & Privacy</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom: 0.5rem;">
+                                <a href="{{ url_for('privacy_policy') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Privacy Policy</a>
+                            </li>
+                            <li style="margin-bottom: 0.5rem;">
+                                <a href="{{ url_for('terms_of_service') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Terms of Service</a>
+                            </li>
+                            <li style="margin-bottom: 0.5rem;">
+                                <a href="{{ url_for('data_processing') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Data Processing</a>
+                            </li>
+                            {% if current_user.is_authenticated %}
+                            <li style="margin-bottom: 0.5rem;">
+                                <a href="{{ url_for('export_data') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Export My Data</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
+                    <!-- Account -->
+                    <div>
+                        <h4 style="margin-bottom: 1rem; font-weight: 600;">Account</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            {% if current_user.is_authenticated %}
+                            <li style="margin-bottom: 0.5rem;">
+                                <a href="{{ url_for('profile') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">My Profile</a>
+                            </li>
+                            <li style="margin-bottom: 0.5rem;">
+                                <a href="{{ url_for('user_preferences') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Preferences</a>
+                            </li>
+                            <li style="margin-bottom: 0.5rem;">
+                                <a href="{{ url_for('delete_account') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Delete Account</a>
+                            </li>
+                            {% else %}
+                            <li style="margin-bottom: 0.5rem;">
+                                <a href="{{ url_for('login') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Login</a>
+                            </li>
+                            <li style="margin-bottom: 0.5rem;">
+                                <a href="{{ url_for('register') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Register</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Copyright and GDPR Notice -->
+                <div style="border-top: 1px solid var(--gray-800); padding-top: 2rem; color: var(--gray-400); font-size: 0.85rem;">
+                    <p style="margin-bottom: 0.5rem;">
+                        © 2026 ThingList. All rights reserved. |
+                        <a href="{{ url_for('privacy_policy') }}" style="color: var(--gray-400); text-decoration: none;">Privacy</a> |
+                        <a href="{{ url_for('terms_of_service') }}" style="color: var(--gray-400); text-decoration: none;">Terms</a> |
+                        <a href="{{ url_for('data_processing') }}" style="color: var(--gray-400); text-decoration: none;">GDPR</a>
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- User Dropdown Menu JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userMenuToggle = document.getElementById('userMenuToggle');
+            const userDropdown = document.getElementById('userDropdown');
+
+            if (userMenuToggle && userDropdown) {
+                // Toggle dropdown on user menu click
+                userMenuToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userMenuToggle.classList.toggle('active');
+                    userDropdown.classList.toggle('show');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!userMenuToggle.contains(e.target)) {
+                        userMenuToggle.classList.remove('active');
+                        userDropdown.classList.remove('show');
+                    }
+                });
+
+                // Close dropdown when a link is clicked
+                userDropdown.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', function() {
+                        userMenuToggle.classList.remove('active');
+                        userDropdown.classList.remove('show');
+                    });
+                });
+            }
+        });
+    </script>
+
+    <!-- Toast Notification JavaScript -->
+    <script>
+        class Toast {
+            constructor(message, type = 'info', duration = 5000) {
+                this.message = message;
+                this.type = type;
+                this.duration = duration;
+                this.element = null;
+            }
+
+            show() {
+                const container = document.getElementById('toastContainer');
+
+                this.element = document.createElement('div');
+                this.element.className = `toast toast-${this.type}`;
+                this.element.textContent = this.message;
+
+                container.appendChild(this.element);
+
+                // Auto-hide after duration
+                if (this.duration > 0) {
+                    setTimeout(() => this.hide(), this.duration);
+                }
+
+                return this;
+            }
+
+            hide() {
+                if (this.element) {
+                    this.element.classList.add('hide');
+                    setTimeout(() => {
+                        if (this.element && this.element.parentNode) {
+                            this.element.parentNode.removeChild(this.element);
+                        }
+                    }, 300);
+                }
+            }
+
+            static success(message, duration = 5000) {
+                return new Toast(message, 'success', duration).show();
+            }
+
+            static error(message, duration = 5000) {
+                return new Toast(message, 'error', duration).show();
+            }
+
+            static warning(message, duration = 5000) {
+                return new Toast(message, 'warning', duration).show();
+            }
+
+            static info(message, duration = 5000) {
+                return new Toast(message, 'info', duration).show();
+            }
+        }
+
+        // Show server-side flash messages as toasts
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.getElementById('flashMessages');
+            if (flashMessages) {
+                flashMessages.querySelectorAll('[data-message]').forEach(item => {
+                    const type = item.getAttribute('data-type');
+                    const message = item.getAttribute('data-message');
+                    Toast[type](message);
+                });
+            }
+        });
+
+        // Global function for client-side toasts
+        window.showToast = function(message, type = 'info', duration = 5000) {
+            return Toast[type](message, duration);
+        };
+    </script>
+    <!-- Bootstrap JS for modals and interactive components -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

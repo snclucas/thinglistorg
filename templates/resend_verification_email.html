@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Resend Verification Email - ThingList{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 4rem auto; padding: 2rem;">
+    <div class="modern-card">
+        <div style="padding: 2rem;">
+            <h1 style="margin-top: 0; color: var(--primary-600);">
+                <i class="fas fa-envelope" style="margin-right: 0.5rem;"></i>
+                Resend Verification Email
+            </h1>
+
+            <p style="color: var(--gray-600); margin-bottom: 2rem;">
+                If you didn't receive the verification email or it has expired, enter your email address below to resend it.
+            </p>
+
+            <form method="POST" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="form-group">
+                    <label for="email" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                        Email Address
+                    </label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="your@email.com"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem;"
+                        required
+                    >
+                </div>
+
+                <button
+                    type="submit"
+                    style="width: 100%; padding: 0.875rem; background: var(--primary-600); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 1.5rem; transition: all 0.3s;"
+                    onmouseover="this.style.background='var(--primary-700)'; this.style.transform='translateY(-2px)'"
+                    onmouseout="this.style.background='var(--primary-600)'; this.style.transform='translateY(0)'"
+                >
+                    <i class="fas fa-send" style="margin-right: 0.5rem;"></i>
+                    Resend Verification Email
+                </button>
+            </form>
+
+            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--gray-200); text-align: center;">
+                <p style="margin: 0; color: var(--gray-600); font-size: 0.9rem;">
+                    <a href="{{ url_for('login') }}" style="color: var(--primary-600); text-decoration: none; font-weight: 600;">Back to Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

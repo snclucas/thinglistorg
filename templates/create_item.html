@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Item - ThingList{% endblock %}
+
+{% block meta_description %}Add a new item to your inventory list on ThingList. Track details, quantities, and more.{% endblock %}
+
+{% block meta_keywords %}add item, create item, inventory item, new item{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Add New Item - ThingList{% endblock %}
+
+{% block og_description %}Add and track new items in your inventory.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='forms.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>📦 Add New Item</h1>
+    <p>Adding to: <strong>{{ list.name }}</strong></p>
+
+    <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <!-- Name is always shown (required) -->
+        <div class="form-group">
+            <label for="name">Item Name *</label>
+            <input type="text" id="name" name="name" required placeholder="e.g., Coffee Maker" autofocus>
+            <div class="help-text">What is the name of this item?</div>
+        </div>
+
+        {% if list.is_field_visible('description') %}
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" placeholder="Add details about this item..."></textarea>
+            <div class="help-text">Optional: Add any additional information about this item</div>
+        </div>
+        {% endif %}
+
+        <div class="form-row">
+            {% if list.is_field_visible('item_type') %}
+            <div class="form-group">
+                <label for="item_type">Item Type</label>
+                <div class="autocomplete-container">
+                    <input type="text" id="item_type" name="item_type" placeholder="e.g., Electronics" autocomplete="off">
+                    <div class="autocomplete-list" id="itemTypeList"></div>
+                </div>
+                <div class="help-text">Category or type of item (autocomplete available)</div>
+            </div>
+            {% endif %}
+
+            {% if list.is_field_visible('location') %}
+            <div class="form-group">
+                <label for="location">Location</label>
+                <input type="text" id="location" name="location" placeholder="e.g., Kitchen Cabinet">
+                <div class="help-text">Where is this item stored?</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-row">
+            {% if list.is_field_visible('quantity') %}
+            <div class="form-group">
+                <label for="quantity">Quantity</label>
+                <input type="number" id="quantity" name="quantity" value="1" min="1">
+                <div class="help-text">How many do you have?</div>
+            </div>
+            {% endif %}
+
+            {% if list.is_field_visible('tags') %}
+            <div class="form-group">
+                <label for="tags">Tags</label>
+                <input type="text" id="tags" name="tags" placeholder="e.g., fragile, new">
+                <div class="help-text">Comma-separated tags</div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if list.is_field_visible('notes') %}
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes" placeholder="Add any special notes..."></textarea>
+            <div class="help-text">Optional: Additional notes or comments</div>
+        </div>
+        {% endif %}
+
+        {% if list.is_field_visible('low_stock_threshold') %}
+        <div class="form-group">
+            <label for="low_stock_threshold">Low Stock Threshold</label>
+            <input type="number" id="low_stock_threshold" name="low_stock_threshold" value="0" min="0">
+            <div class="help-text">Get alerted when quantity falls below this level</div>
+        </div>
+        {% endif %}
+
+        {% if list.is_field_visible('barcode') %}
+        <div class="form-group">
+            <label for="barcode">Barcode/SKU</label>
+            <input type="text" id="barcode" name="barcode" placeholder="e.g., 123456789">
+            <div class="help-text">Barcode or SKU number</div>
+        </div>
+        {% endif %}
+
+        {% if list.is_field_visible('url') %}
+        <div class="form-group">
+            <label for="url">URL</label>
+            <input type="url" id="url" name="url" placeholder="https://example.com/product">
+            <div class="help-text">Link to product or reference page</div>
+        </div>
+        {% endif %}
+
+        {% if list.is_field_visible('reminder_at') %}
+        <div class="form-group">
+            <label for="reminder_at">Reminder</label>
+            <input type="datetime-local" id="reminder_at" name="reminder_at">
+            <div class="help-text">Set a date/time reminder for this item</div>
+        </div>
+        {% endif %}
+
+        {% if list.is_field_visible('images') %}
+        <div class="form-group">
+            <label for="images">Images</label>
+            <input type="file" id="images" name="images" accept="image/*" multiple>
+            <div class="help-text">Upload one or more images for this item</div>
+        </div>
+        {% endif %}
+
+        <!-- Custom Fields Section -->
+        {% if list.get_custom_fields() %}
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #e5e7eb;">
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: #374151; margin-bottom: 1rem;">Custom Fields</h3>
+            {% for field in list.get_custom_fields() %}
+                {% if field.is_visible %}
+                <div class="form-group">
+                    <label for="custom_{{ field.id }}">{{ field.name }}</label>
+
+                    {% if field.field_type == 'text' %}
+                        <input type="text" id="custom_{{ field.id }}" name="custom_{{ field.id }}" placeholder="Enter value" {% if not field.is_editable %}readonly{% endif %}>
+
+                    {% elif field.field_type == 'boolean' %}
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" id="custom_{{ field.id }}" name="custom_{{ field.id }}" value="true" {% if not field.is_editable %}disabled{% endif %}>
+                            <label for="custom_{{ field.id }}" style="margin: 0;">Yes</label>
+                        </div>
+
+                    {% elif field.field_type == 'options' %}
+                        <select id="custom_{{ field.id }}" name="custom_{{ field.id }}" {% if not field.is_editable %}disabled{% endif %}>
+                            <option value="">Select an option...</option>
+                            {% for option in field.get_options() %}
+                                <option value="{{ option }}">{{ option }}</option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="button-group">
+            <button type="submit">Create Item</button>
+            <a href="{{ url_for('view_list', list_id=list.id) }}" class="btn-cancel">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    const itemTypeInput = document.getElementById('item_type');
+    const itemTypeList = document.getElementById('itemTypeList');
+    let selectedIndex = -1;
+
+    itemTypeInput.addEventListener('input', async (e) => {
+        const query = e.target.value.trim();
+        selectedIndex = -1;
+
+        if (query.length < 1) {
+            itemTypeList.classList.remove('active');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/item-types/autocomplete?q=${encodeURIComponent(query)}`);
+            const types = await response.json();
+
+            if (types.length === 0) {
+                itemTypeList.classList.remove('active');
+                return;
+            }
+
+            itemTypeList.innerHTML = types.map((type, idx) =>
+                `<div class="autocomplete-item" data-value="${type.name}" data-index="${idx}">${type.name}</div>`
+            ).join('');
+
+            itemTypeList.classList.add('active');
+
+            // Add click handlers
+            document.querySelectorAll('.autocomplete-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    itemTypeInput.value = item.dataset.value;
+                    itemTypeList.classList.remove('active');
+                });
+            });
+        } catch (error) {
+            console.error('Autocomplete error:', error);
+        }
+    });
+
+    // Keyboard navigation
+    itemTypeInput.addEventListener('keydown', (e) => {
+        const items = document.querySelectorAll('.autocomplete-item');
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+            updateSelection(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(selectedIndex - 1, -1);
+            updateSelection(items);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIndex >= 0) {
+                itemTypeInput.value = items[selectedIndex].dataset.value;
+                itemTypeList.classList.remove('active');
+            }
+        } else if (e.key === 'Escape') {
+            itemTypeList.classList.remove('active');
+        }
+    });
+
+    function updateSelection(items) {
+        items.forEach((item, idx) => {
+            if (idx === selectedIndex) {
+                item.classList.add('selected');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    // Close autocomplete when clicking outside
+    document.addEventListener('click', (e) => {
+        if (e.target !== itemTypeInput) {
+            itemTypeList.classList.remove('active');
+        }
+    });
+</script>
+{% endblock %}

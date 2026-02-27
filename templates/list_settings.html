@@ -1,0 +1,643 @@
+{% extends "base.html" %}
+
+{% block title %}List Settings - {{ list.name }} - ThingList{% endblock %}
+
+{% block meta_description %}Manage settings for {{ list.name }} on ThingList. Configure visibility, sharing, custom fields, and more.{% endblock %}
+
+{% block meta_keywords %}list settings, visibility settings, sharing options, custom fields{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}List Settings - ThingList{% endblock %}
+
+{% block og_description %}Configure settings for your inventory list.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        max-width: 900px;
+        margin: 2rem auto;
+    }
+
+    .settings-header {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 2rem;
+    }
+
+    .settings-header h1 {
+        color: var(--gray-900);
+        margin: 0 0 0.5rem 0;
+        font-size: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .settings-subtitle {
+        color: var(--gray-600);
+        font-size: 1rem;
+    }
+
+    .settings-card {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 2rem;
+    }
+
+    .settings-card-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin: 0 0 1.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .field-settings-grid {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .field-setting-row {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 2rem;
+        align-items: center;
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--gray-200);
+        transition: all var(--transition-fast);
+    }
+
+    .field-setting-row:hover {
+        background: var(--gray-50);
+        border-color: var(--gray-300);
+    }
+
+    .field-name {
+        font-weight: 600;
+        color: var(--gray-900);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .field-name svg {
+        color: var(--gray-400);
+    }
+
+    .field-description {
+        font-size: 0.875rem;
+        color: var(--gray-500);
+        margin-top: 0.25rem;
+    }
+
+    .toggle-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .toggle-label {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        font-weight: 500;
+        min-width: 60px;
+    }
+
+    /* Custom Toggle Switch */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--gray-300);
+        transition: var(--transition-base);
+        border-radius: var(--radius-full);
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: var(--transition-base);
+        border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+        background-color: var(--primary-600);
+    }
+
+    input:checked + .toggle-slider:before {
+        transform: translateX(20px);
+    }
+
+    input:disabled + .toggle-slider {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .help-box {
+        background: var(--info-light);
+        border: 1px solid var(--primary-200);
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        margin-bottom: 2rem;
+    }
+
+    .help-box-title {
+        font-weight: 600;
+        color: var(--primary-700);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .help-box-text {
+        font-size: 0.9375rem;
+        color: var(--primary-900);
+        line-height: 1.6;
+    }
+
+    /* Custom Fields Section */
+    .custom-fields-list {
+        display: grid;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .custom-field-item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 2rem;
+        align-items: center;
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--gray-200);
+        transition: all var(--transition-fast);
+        background: linear-gradient(135deg, var(--gray-50), white);
+    }
+
+    .custom-field-item:hover {
+        border-color: var(--primary-300);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .custom-field-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .custom-field-name {
+        font-weight: 600;
+        color: var(--gray-900);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .custom-field-type {
+        font-size: 0.875rem;
+        color: var(--gray-500);
+    }
+
+    .custom-field-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .custom-field-btn {
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-md);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        text-decoration: none;
+    }
+
+    .custom-field-btn-visibility {
+        background: white;
+        color: var(--gray-700);
+        border-color: var(--gray-300);
+    }
+
+    .custom-field-btn-visibility:hover {
+        background: var(--gray-50);
+        border-color: var(--gray-400);
+    }
+
+    .custom-field-btn-editable {
+        background: white;
+        color: var(--gray-700);
+        border-color: var(--gray-300);
+    }
+
+    .custom-field-btn-editable:hover {
+        background: var(--gray-50);
+        border-color: var(--gray-400);
+    }
+
+    .custom-field-btn-delete {
+        background: white;
+        color: var(--danger);
+        border-color: var(--danger-light);
+    }
+
+    .custom-field-btn-delete:hover {
+        background: var(--danger-light);
+    }
+
+    .add-custom-field-section {
+        background: linear-gradient(135deg, var(--primary-50), var(--info-light));
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        border: 2px dashed var(--primary-300);
+    }
+
+    .add-custom-field-form {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--gray-900);
+    }
+
+    .form-input {
+        padding: 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+        transition: all var(--transition-fast);
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary-600);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-textarea {
+        padding: 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+        min-height: 100px;
+        resize: vertical;
+        transition: all var(--transition-fast);
+        font-family: inherit;
+    }
+
+    .form-textarea:focus {
+        outline: none;
+        border-color: var(--primary-600);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-select {
+        padding: 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+        transition: all var(--transition-fast);
+    }
+
+    .form-select:focus {
+        outline: none;
+        border-color: var(--primary-600);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-help-text {
+        font-size: 0.875rem;
+        color: var(--gray-500);
+    }
+
+    .grid-2-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .field-setting-row {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .toggle-group {
+            justify-content: space-between;
+        }
+
+        .custom-field-item {
+            grid-template-columns: 1fr;
+        }
+
+        .grid-2-cols {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container modern-animate-in">
+    <!-- Breadcrumb -->
+    <div class="modern-breadcrumb">
+        <a href="{{ url_for('lists') }}">
+            <i class="fas fa-list"></i>
+            My Lists
+        </a>
+        <span> / </span>
+        <a href="{{ url_for('view_list', list_id=list.id) }}">{{ list.name }}</a>
+        <span> / </span>
+        <span style="color: var(--gray-600);">Settings</span>
+    </div>
+
+    <!-- Header -->
+    <div class="settings-header">
+        <h1>
+            <i class="fas fa-cog"></i>
+            List Settings
+        </h1>
+        <p class="settings-subtitle">Configure which fields are visible and editable for items in "{{ list.name }}"</p>
+    </div>
+
+    <!-- Help Box -->
+    <div class="help-box">
+        <div class="help-box-title">
+            <i class="fas fa-info-circle"></i>
+            How Field Settings Work
+        </div>
+        <div class="help-box-text">
+            <strong>Visible:</strong> Controls whether the field appears when viewing and editing items.<br>
+            <strong>Editable:</strong> Controls whether the field can be modified. Hidden fields are automatically non-editable.<br>
+            All fields are shown and editable by default.
+        </div>
+    </div>
+
+    <!-- Field Settings Form -->
+    <form method="POST" action="{{ url_for('list_settings', list_id=list.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="settings-card">
+            <h2 class="settings-card-title">
+                <i class="fas fa-list"></i>
+                Item Field Settings
+            </h2>
+
+            <div class="field-settings-grid">
+                {% set fields = [
+                    ('name', 'Item Name', 'The name/title of the item', True),
+                    ('description', 'Description', 'Detailed description of the item', False),
+                    ('notes', 'Notes', 'Additional notes or comments', False),
+                    ('quantity', 'Quantity', 'Number of items in stock', False),
+                    ('low_stock_threshold', 'Low Stock Threshold', 'Alert threshold for low stock', False),
+                    ('item_type', 'Type/Category', 'Classification or category', False),
+                    ('location', 'Location', 'Where the item is stored', False),
+                    ('barcode', 'Barcode', 'Barcode or SKU number', False),
+                    ('url', 'URL', 'Website link or reference', False),
+                    ('tags', 'Tags', 'Categorization tags', False),
+                    ('reminder_at', 'Reminder', 'Date/time reminder', False),
+                    ('attachments', 'Attachments', 'File attachments', False),
+                    ('images', 'Images', 'Item images', False)
+                ] %}
+
+                {% for field_id, field_label, field_desc, is_required in fields %}
+                <div class="field-setting-row">
+                    <div>
+                        <div class="field-name">
+                            {% if is_required %}
+                                <i class="fas fa-lock"></i>
+                            {% endif %}
+                            {{ field_label }}
+                            {% if is_required %}
+                                <span style="color: var(--danger); font-size: 0.75rem;">(Required)</span>
+                            {% endif %}
+                        </div>
+                        <div class="field-description">{{ field_desc }}</div>
+                    </div>
+
+                    <div class="toggle-group">
+                        <span class="toggle-label">Visible</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox"
+                                   name="visible_{{ field_id }}"
+                                   {% if field_settings.get(field_id, {}).get('visible', True) %}checked{% endif %}
+                                   {% if is_required %}disabled{% endif %}
+                                   onchange="handleVisibilityChange(this, '{{ field_id }}')">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-group">
+                        <span class="toggle-label">Editable</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox"
+                                   name="editable_{{ field_id }}"
+                                   id="editable_{{ field_id }}"
+                                   {% if field_settings.get(field_id, {}).get('editable', True) %}checked{% endif %}
+                                   {% if is_required or not field_settings.get(field_id, {}).get('visible', True) %}disabled{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="button-group">
+            <button type="submit" class="modern-btn modern-btn-primary">
+                <i class="fas fa-check"></i>
+                Save Settings
+            </button>
+            <a href="{{ url_for('view_list', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
+                <i class="fas fa-times"></i>
+                Cancel
+            </a>
+        </div>
+    </form>
+
+    <!-- Custom Fields Card -->
+    <div class="settings-card">
+        <h2 class="settings-card-title">
+            <i class="fas fa-sliders-h"></i>
+            Custom Fields
+        </h2>
+
+        {% if list.get_custom_fields() %}
+        <div class="custom-fields-list">
+            {% for field in list.get_custom_fields() %}
+            <div class="custom-field-item">
+                <div class="custom-field-info">
+                    <div class="custom-field-name">
+                        {{ field.name }}
+                        <span style="font-size: 0.75rem; color: var(--gray-500); font-weight: 400;">
+                            ({{ field.field_type }})
+                        </span>
+                        {% if not field.is_visible %}
+                            <span style="color: var(--gray-400); font-size: 0.75rem;">• Hidden</span>
+                        {% endif %}
+                        {% if not field.is_editable %}
+                            <span style="color: var(--gray-400); font-size: 0.75rem;">• Read-only</span>
+                        {% endif %}
+                    </div>
+                    <div class="custom-field-type">
+                        {% if field.field_type == 'text' %}
+                            Text input field
+                        {% elif field.field_type == 'boolean' %}
+                            Yes/No toggle
+                        {% elif field.field_type == 'options' %}
+                            Select from: {{ field.get_options()|join(', ') }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="custom-field-actions">
+                    <a href="{{ url_for('edit_custom_field_name', list_id=list.id, field_id=field.id) }}" class="custom-field-btn custom-field-btn-edit" title="Edit field name">
+                        ✏️ Edit
+                    </a>
+                    <form method="POST" action="{{ url_for('toggle_custom_field_visibility', list_id=list.id, field_id=field.id) }}" style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="custom-field-btn custom-field-btn-visibility" title="Toggle visibility">
+                            {% if field.is_visible %}👁️ Hide{% else %}👁️‍🗨️ Show{% endif %}
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('toggle_custom_field_editable', list_id=list.id, field_id=field.id) }}" style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="custom-field-btn custom-field-btn-editable" title="Toggle editability">
+                            {% if field.is_editable %}✏️ Lock{% else %}🔒 Unlock{% endif %}
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('delete_custom_field', list_id=list.id, field_id=field.id) }}" style="display: inline;" onsubmit="return confirm('Delete field &quot;{{ field.name }}&quot;? This will also delete all values for this field.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="custom-field-btn custom-field-btn-delete" title="Delete field">
+                            🗑️ Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: var(--gray-500); text-align: center; padding: 2rem 0;">No custom fields yet. Add one below to get started!</p>
+        {% endif %}
+    </div>
+
+    <!-- Add Custom Field Form -->
+    <div class="add-custom-field-section">
+        <h2 class="settings-card-title" style="margin-top: 0;">
+            <i class="fas fa-plus"></i>
+            Add Custom Field
+        </h2>
+
+        <form method="POST" action="{{ url_for('add_custom_field', list_id=list.id) }}" class="add-custom-field-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="grid-2-cols">
+                <div class="form-group">
+                    <label class="form-label" for="field_name">Field Name *</label>
+                    <input type="text" id="field_name" name="field_name" class="form-input" placeholder="e.g., Color, Size, SKU" required>
+                    <p class="form-help-text">A unique name for this custom field</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="field_type">Field Type *</label>
+                    <select id="field_type" name="field_type" class="form-select" onchange="toggleOptionsField()">
+                        <option value="text">Text Input</option>
+                        <option value="boolean">Yes/No Toggle</option>
+                        <option value="options">Select Options</option>
+                    </select>
+                    <p class="form-help-text">Type of field for item values</p>
+                </div>
+            </div>
+
+            <div id="options-field" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label" for="field_options">Options (one per line) *</label>
+                    <textarea id="field_options" name="field_options" class="form-textarea" placeholder="Red&#10;Blue&#10;Green"></textarea>
+                    <p class="form-help-text">Enter each option on a separate line. Required for 'Select Options' type.</p>
+                </div>
+            </div>
+
+            <button type="submit" class="modern-btn modern-btn-primary">
+                <i class="fas fa-plus"></i>
+                Add Custom Field
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function handleVisibilityChange(checkbox, fieldId) {
+    const editableCheckbox = document.getElementById('editable_' + fieldId);
+    if (editableCheckbox) {
+        if (!checkbox.checked) {
+            // If visibility is turned off, disable editable
+            editableCheckbox.checked = false;
+            editableCheckbox.disabled = true;
+        } else {
+            // If visibility is turned on, enable editable
+            editableCheckbox.disabled = false;
+        }
+    }
+}
+
+function toggleOptionsField() {
+    const fieldType = document.getElementById('field_type').value;
+    const optionsField = document.getElementById('options-field');
+    const optionsTextarea = document.getElementById('field_options');
+
+    if (fieldType === 'options') {
+        optionsField.style.display = 'block';
+        optionsTextarea.required = true;
+    } else {
+        optionsField.style.display = 'none';
+        optionsTextarea.required = false;
+    }
+}
+</script>
+{% endblock %}
+

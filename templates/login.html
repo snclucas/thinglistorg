@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Login - ThingList Inventory Management{% endblock %}
+
+{% block meta_description %}Log in to your ThingList account to manage your inventory, organize items, and collaborate with your team.{% endblock %}
+
+{% block meta_keywords %}login, sign in, account login, inventory management login{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Login to ThingList{% endblock %}
+
+{% block og_description %}Sign in to your ThingList account to manage your inventory.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-container {
+        max-width: 500px;
+        margin: 2rem auto;
+        background: white;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+    }
+
+    .auth-container h2 {
+        color: #2563eb;
+        margin-bottom: 2rem;
+        text-align: center;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #374151;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+        transition: all 0.3s;
+        background: #f9fafb;
+    }
+
+    input:focus {
+        outline: none;
+        border-color: #2563eb;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    input[type="checkbox"] {
+        width: auto;
+        margin-right: 0.5rem;
+        background: white;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        color: #6b7280;
+        margin: 1.5rem 0;
+        font-size: 0.95rem;
+    }
+
+    .checkbox-group label {
+        margin-bottom: 0;
+        margin-left: 0.5rem;
+        color: #6b7280;
+    }
+
+    .form-errors {
+        color: #dc2626;
+        font-size: 0.875rem;
+        margin-top: 0.4rem;
+    }
+
+    .form-group.error input {
+        border-color: #dc2626;
+        background: #fef2f2;
+    }
+
+    button {
+        width: 100%;
+        padding: 0.875rem;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    button:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+
+    .register-link {
+        text-align: center;
+        margin-top: 1.5rem;
+        color: #6b7280;
+        font-size: 0.95rem;
+    }
+
+    .register-link a {
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .register-link a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Sign In</h2>
+
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="form-group {% if form.credential.errors %}error{% endif %}">
+            <label for="credential">Username or Email</label>
+            {{ form.credential(id="credential", placeholder="username or your@email.com") }}
+            {% if form.credential.errors %}
+                <div class="form-errors">
+                    {% for error in form.credential.errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {% if form.password.errors %}error{% endif %}">
+            {{ form.password.label }}
+            {{ form.password(placeholder="Enter your password") }}
+            {% if form.password.errors %}
+                <div class="form-errors">
+                    {% for error in form.password.errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="remember" name="remember" value="on">
+            <label for="remember" style="margin-bottom: 0;">Remember me</label>
+        </div>
+
+        {{ form.submit() }}
+    </form>
+
+    <div class="register-link">
+        Don't have an account? <a href="{{ url_for('register') }}">Create one here</a>
+    </div>
+
+    <div class="register-link" style="margin-top: 1rem;">
+        <a href="{{ url_for('forgot_password') }}">Forgot your password?</a>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages and "Email not verified" in messages|join(" ") %}
+            <div class="register-link" style="margin-top: 1rem;">
+                <a href="{{ url_for('resend_verification_email') }}">Didn't receive verification email?</a>
+            </div>
+        {% endif %}
+    {% endwith %}
+</div>
+{% endblock %}
+

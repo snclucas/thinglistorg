@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Preferences - Customize Your ThingList Experience{% endblock %}
+
+{% block meta_description %}Customize your ThingList preferences. Set pagination, display options, and other application settings.{% endblock %}
+
+{% block meta_keywords %}preferences, settings, configuration, display options{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Preferences - ThingList{% endblock %}
+
+{% block og_description %}Customize your ThingList application settings and preferences.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .preferences-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        background: white;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .preferences-container h2 {
+        color: #2563eb;
+        margin-bottom: 2rem;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+
+    .pref-section {
+        margin-bottom: 2.5rem;
+        padding-bottom: 2.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .pref-section h3 {
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .pref-section:last-child {
+        border-bottom: none;
+    }
+
+    .pref-item {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+    }
+
+    .pref-label {
+        font-weight: 500;
+        color: #1f2937;
+        font-size: 0.95rem;
+    }
+
+    .pref-label-help {
+        display: block;
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+        font-weight: 400;
+    }
+
+    .pref-control {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .pref-input {
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        width: 100%;
+        transition: all 0.3s;
+    }
+
+    .pref-input:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .pref-input[type="number"] {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .pref-hint {
+        font-size: 0.85rem;
+        color: #9ca3af;
+        margin-left: 0.5rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+        font-size: 0.95rem;
+    }
+
+    .btn-primary {
+        background: #2563eb;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #333;
+    }
+
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        transform: translateY(-2px);
+    }
+
+    .alert {
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1.5rem;
+    }
+
+    .alert-info {
+        background: #f0f4ff;
+        border-left: 4px solid #2563eb;
+        color: #1f2937;
+    }
+
+    .settings-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .items-per-page-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .option-button {
+        padding: 0.75rem 1rem;
+        border: 2px solid #d1d5db;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+        text-align: center;
+    }
+
+    .option-button:hover {
+        border-color: #2563eb;
+        background: #f0f4ff;
+    }
+
+    .option-button.active {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
+    }
+
+    .custom-input-wrapper {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="preferences-container">
+    <h2>
+        <i class="fas fa-sliders-h"></i>
+        Preferences
+    </h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="settings-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="pref-section">
+            <h3>List View Settings</h3>
+
+            <div class="pref-item">
+                <div>
+                    <div class="pref-label">Items Per Page</div>
+                    <div class="pref-label-help">How many items to show per page when viewing a list</div>
+                </div>
+                <div class="pref-control custom-input-wrapper">
+                    <input
+                        type="number"
+                        name="items_per_page"
+                        class="pref-input"
+                        min="5"
+                        max="100"
+                        value="{{ items_per_page }}"
+                        step="5"
+                    >
+                    <span class="pref-hint">5-100 items</span>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Quick Presets:</strong> Popular choices are 20, 30, 50, or 100 items per page.
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                Save Preferences
+            </button>
+            <a href="{{ url_for('profile') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Profile
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

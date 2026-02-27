@@ -1,0 +1,775 @@
+{% extends "base.html" %}
+
+{% block title %}Search Inventory - ThingList{% endblock %}
+
+{% block meta_description %}Search your inventory on ThingList. Find items and lists across your collections quickly and easily.{% endblock %}
+
+{% block meta_keywords %}search inventory, find items, inventory search, item discovery{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Search Your Inventory - ThingList{% endblock %}
+
+{% block og_description %}Search and find items in your ThingList inventory.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    .search-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .search-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 2rem;
+        border-radius: var(--radius-xl);
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .search-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .search-header p {
+        font-size: 1.1rem;
+        opacity: 0.95;
+    }
+
+    .search-box-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .search-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        display: flex;
+        gap: 1rem;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 1rem 1.5rem;
+        font-size: 1.1rem;
+        border: 2px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        transition: all 0.3s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .search-btn {
+        padding: 1rem 2.5rem;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: var(--radius-md);
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .search-btn:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .search-filters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .filter-group-title {
+        font-weight: 600;
+        color: var(--gray-700);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: var(--radius-sm);
+        transition: background 0.2s;
+    }
+
+    .checkbox-label:hover {
+        background: var(--gray-50);
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .toggle-wrapper {
+        background: var(--gray-50);
+        border: 1px solid var(--gray-300);
+        padding: 1rem;
+        border-radius: var(--radius-md);
+    }
+
+    .toggle-label {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .toggle-label input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .results-section {
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--gray-200);
+    }
+
+    .results-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .results-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #667eea;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.875rem;
+        font-weight: 700;
+    }
+
+    .results-grid {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .result-card {
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        padding: 1.5rem;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+
+    .result-card:hover {
+        border-color: #667eea;
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .result-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 0.75rem;
+    }
+
+    .result-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 0.5rem;
+    }
+
+    .result-title a {
+        color: var(--gray-900);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .result-title a:hover {
+        color: #667eea;
+    }
+
+    .result-type {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.75rem;
+        background: var(--gray-100);
+        color: var(--gray-700);
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .result-description {
+        color: var(--gray-600);
+        margin-bottom: 0.75rem;
+        line-height: 1.6;
+    }
+
+    .result-meta {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        font-size: 0.875rem;
+        color: var(--gray-500);
+    }
+
+    .result-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state-title {
+        font-size: 1.5rem;
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state-text {
+        color: var(--gray-500);
+        font-size: 1rem;
+    }
+
+    /* Boolean Logic Help */
+    .boolean-help {
+        background: #e3f2fd;
+        border: 1px solid #90caf9;
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        margin-top: 1rem;
+        font-size: 0.85rem;
+        color: #1565c0;
+    }
+
+    .boolean-help-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .boolean-help-list {
+        margin: 0.5rem 0 0 1.5rem;
+        padding: 0;
+    }
+
+    .boolean-help-list li {
+        margin: 0.25rem 0;
+    }
+
+    .boolean-help-code {
+        background: #f5f5f5;
+        padding: 0.2rem 0.5rem;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 0.8rem;
+    }
+
+    /* Error Message */
+    .search-error {
+        background: #ffebee;
+        border: 1px solid #ef5350;
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        color: #c62828;
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .search-error-icon {
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    /* Collapsible Sections */
+    .collapse-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        padding: 0.5rem;
+        border-radius: var(--radius-md);
+        transition: all 0.3s;
+    }
+
+    .collapse-btn:hover {
+        background: var(--gray-100);
+        color: #667eea;
+    }
+
+    .collapse-icon {
+        transition: transform 0.3s;
+        font-size: 0.75rem;
+    }
+
+    .collapse-icon.collapsed {
+        transform: rotate(-90deg);
+    }
+
+    .collapsible-content {
+        max-height: 10000px;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+        opacity: 1;
+    }
+
+    .collapsible-content.collapsed {
+        max-height: 0;
+        opacity: 0;
+    }
+
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--gray-200);
+    }
+
+    .results-header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .search-container {
+            padding: 1rem;
+        }
+
+        .search-header {
+            padding: 2rem 1rem;
+        }
+
+        .search-header h1 {
+            font-size: 1.75rem;
+        }
+
+        .search-box-card {
+            padding: 1.5rem;
+        }
+
+        .search-input-wrapper {
+            flex-direction: column;
+        }
+
+        .search-btn {
+            width: 100%;
+        }
+
+        .search-filters {
+            grid-template-columns: 1fr;
+        }
+
+        .results-section {
+            padding: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="search-container">
+    <!-- Header -->
+    <div class="search-header">
+        <h1><i class="fas fa-search"></i> Search</h1>
+        <p>Find lists and items across your collections</p>
+    </div>
+
+    <!-- Search Box -->
+    <div class="search-box-card">
+        <form method="GET" action="{{ url_for('search') }}" class="search-form">
+            <div class="search-input-wrapper">
+                <input
+                    type="text"
+                    name="q"
+                    class="search-input"
+                    placeholder="Search for lists, items, tags, locations..."
+                    value="{{ query }}"
+                    autofocus
+                >
+                <button type="submit" class="search-btn">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+
+            <div class="search-filters">
+                <!-- Search Scope -->
+                <div class="filter-group">
+                    <div class="filter-group-title">Search In</div>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="all" {% if search_all %}checked{% endif %} onchange="toggleAllCheckboxes(this)">
+                            <span>All Fields</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="description" class="scope-checkbox" {% if search_description %}checked{% endif %}>
+                            <span>Descriptions</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="tags" class="scope-checkbox" {% if search_tags %}checked{% endif %}>
+                            <span>Tags</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="locations" class="scope-checkbox" {% if search_locations %}checked{% endif %}>
+                            <span>Locations</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="notes" class="scope-checkbox" {% if search_notes %}checked{% endif %}>
+                            <span>Notes</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Include Public Option (only for authenticated users) -->
+                {% if current_user.is_authenticated %}
+                <div class="filter-group">
+                    <div class="filter-group-title">Content Scope</div>
+                    <div class="toggle-wrapper">
+                        <label class="toggle-label">
+                            <input type="checkbox" name="include_public" {% if include_public %}checked{% endif %}>
+                            <span>Include Public Lists</span>
+                        </label>
+                        <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--gray-600);">
+                            Search public lists in addition to your own
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Search Results -->
+    {% if query %}
+        <!-- Error Message -->
+        {% if boolean_error %}
+        <div class="search-error">
+            <i class="fas fa-exclamation-circle search-error-icon"></i>
+            <span>{{ boolean_error }}</span>
+        </div>
+        {% endif %}
+
+        <!-- Boolean Syntax Help -->
+        <div class="boolean-help">
+            <div class="boolean-help-title">
+                <i class="fas fa-info-circle"></i>
+                Boolean Search Guide
+            </div>
+            <ul class="boolean-help-list">
+                <li><span class="boolean-help-code">hammer</span> - Simple search (matches "hammer")</li>
+                <li><span class="boolean-help-code">hammer AND tool</span> - Both terms required</li>
+                <li><span class="boolean-help-code">hammer OR wrench</span> - Either term</li>
+                <li><span class="boolean-help-code">NOT broken</span> - Exclude term</li>
+                <li><span class="boolean-help-code">(hammer OR wrench) AND heavy</span> - Group with brackets</li>
+                <li><span class="boolean-help-code">"power drill"</span> - Quote for exact phrases</li>
+            </ul>
+        </div>
+
+        <!-- Lists Results -->
+        {% if lists %}
+        <div class="results-section">
+            <div class="results-header">
+                <div class="results-header-left">
+                    <h2 class="results-title">
+                        <i class="fas fa-list"></i>
+                        Lists
+                        <span class="results-count">{{ total_lists }}</span>
+                    </h2>
+                </div>
+                <button class="collapse-btn" onclick="toggleSection('lists-section')" type="button">
+                    <i class="fas fa-chevron-down collapse-icon" id="lists-collapse-icon"></i>
+                    <span id="lists-collapse-text">Collapse</span>
+                </button>
+            </div>
+            <div class="collapsible-content" id="lists-section">
+                <div class="results-grid">
+                {% for list in lists %}
+                <div class="result-card" onclick="window.location.href='{{ url_for('view_list', list_id=list.id) }}'">
+                    <div class="result-card-header">
+                        <div style="flex: 1;">
+                            <h3 class="result-title">
+                                <a href="{{ url_for('view_list', list_id=list.id) }}">{{ list.name }}</a>
+                            </h3>
+                            {% if list.description %}
+                                <div class="result-description">{{ list.description[:200] }}{% if list.description|length > 200 %}...{% endif %}</div>
+                            {% endif %}
+                        </div>
+                        <span class="result-type">
+                            <i class="fas fa-list"></i> List
+                        </span>
+                    </div>
+                    <div class="result-meta">
+                        <div class="result-meta-item">
+                            <i class="fas fa-box"></i>
+                            <span>{{ list.items|length }} items</span>
+                        </div>
+                        {% set access_type = get_list_access_type(list, current_user_id) %}
+                        {% if access_type %}
+                            {% if access_type == 'own' %}
+                                <div class="result-meta-item" style="background: #dbeafe; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; color: #0c4a6e; font-weight: 600;">
+                                    <i class="fas fa-user"></i> Your List
+                                </div>
+                            {% elif access_type == 'shared' %}
+                                <div class="result-meta-item" style="background: #f3e8ff; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; color: #6b21a8; font-weight: 600;">
+                                    <i class="fas fa-share-alt"></i> Shared With You
+                                </div>
+                            {% elif access_type == 'group' %}
+                                <div class="result-meta-item" style="background: #dcfce7; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; color: #166534; font-weight: 600;">
+                                    <i class="fas fa-users"></i> Group List
+                                </div>
+                            {% elif access_type == 'public' %}
+                                <div class="result-meta-item" style="background: #fed7aa; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; color: #92400e; font-weight: 600;">
+                                    <i class="fas fa-globe"></i> Public
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                        <div class="result-meta-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>{{ list.created_at.strftime('%b %d, %Y') }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                </div>
+                {% if total_lists > 20 %}
+                <div style="text-align: center; margin-top: 1.5rem; color: var(--gray-600);">
+                    Showing first 20 of {{ total_lists }} lists
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Items Results -->
+        {% if items %}
+        <div class="results-section">
+            <div class="results-header">
+                <div class="results-header-left">
+                    <h2 class="results-title">
+                        <i class="fas fa-box"></i>
+                        Items
+                        <span class="results-count">{{ total_items }}</span>
+                    </h2>
+                </div>
+                <button class="collapse-btn" onclick="toggleSection('items-section')" type="button">
+                    <i class="fas fa-chevron-down collapse-icon" id="items-collapse-icon"></i>
+                    <span id="items-collapse-text">Collapse</span>
+                </button>
+            </div>
+            <div class="collapsible-content" id="items-section">
+                <div class="results-grid">
+                {% for item in items %}
+                <div class="result-card" onclick="window.location.href='{{ url_for('view_item', item_id=item.id) }}'">
+                    <div class="result-card-header">
+                        <div style="flex: 1;">
+                            <h3 class="result-title">
+                                <a href="{{ url_for('view_item', item_id=item.id) }}">{{ item.name }}</a>
+                            </h3>
+                            {% if item.description %}
+                                <div class="result-description">{{ item.description[:200] }}{% if item.description|length > 200 %}...{% endif %}</div>
+                            {% endif %}
+                        </div>
+                        <span class="result-type">
+                            <i class="fas fa-box"></i> Item
+                        </span>
+                    </div>
+                    <div class="result-meta">
+                        <div class="result-meta-item">
+                            <i class="fas fa-list"></i>
+                            <span>{{ item.list.name }}</span>
+                        </div>
+                        {% set access_type = get_list_access_type(item.list, current_user_id) %}
+                        {% if access_type %}
+                            {% if access_type == 'own' %}
+                                <div class="result-meta-item" style="background: #dbeafe; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; color: #0c4a6e; font-weight: 600;">
+                                    <i class="fas fa-user"></i> Your List
+                                </div>
+                            {% elif access_type == 'shared' %}
+                                <div class="result-meta-item" style="background: #f3e8ff; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; color: #6b21a8; font-weight: 600;">
+                                    <i class="fas fa-share-alt"></i> Shared With You
+                                </div>
+                            {% elif access_type == 'group' %}
+                                <div class="result-meta-item" style="background: #dcfce7; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; color: #166534; font-weight: 600;">
+                                    <i class="fas fa-users"></i> Group List
+                                </div>
+                            {% elif access_type == 'public' %}
+                                <div class="result-meta-item" style="background: #fed7aa; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; color: #92400e; font-weight: 600;">
+                                    <i class="fas fa-globe"></i> Public
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                        {% if item.location %}
+                        <div class="result-meta-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>{{ item.location }}</span>
+                        </div>
+                        {% endif %}
+                        {% if item.quantity %}
+                        <div class="result-meta-item">
+                            <i class="fas fa-hashtag"></i>
+                            <span>Qty: {{ item.quantity }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="result-meta-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>{{ item.created_at.strftime('%b %d, %Y') }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                </div>
+                {% if total_items > 20 %}
+                <div style="text-align: center; margin-top: 1.5rem; color: var(--gray-600);">
+                    Showing first 20 of {{ total_items }} items
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- No Results -->
+        {% if not lists and not items %}
+        <div class="results-section">
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3 class="empty-state-title">No results found</h3>
+                <p class="empty-state-text">
+                    Try searching with different keywords or adjust your search filters
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    {% else %}
+        <!-- Initial State -->
+        <div class="results-section">
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3 class="empty-state-title">Start Your Search</h3>
+                <p class="empty-state-text">
+                    Enter a search term to find lists and items
+                </p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleAllCheckboxes(allCheckbox) {
+    const scopeCheckboxes = document.querySelectorAll('.scope-checkbox');
+    scopeCheckboxes.forEach(checkbox => {
+        checkbox.checked = allCheckbox.checked;
+    });
+}
+
+// Update "All" checkbox when individual checkboxes change
+document.querySelectorAll('.scope-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const allCheckbox = document.querySelector('input[name="all"]');
+        const scopeCheckboxes = document.querySelectorAll('.scope-checkbox');
+        const allChecked = Array.from(scopeCheckboxes).every(cb => cb.checked);
+        allCheckbox.checked = allChecked;
+    });
+});
+
+// Toggle collapsible sections
+function toggleSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const icon = document.getElementById(sectionId.replace('-section', '-collapse-icon'));
+    const text = document.getElementById(sectionId.replace('-section', '-collapse-text'));
+
+    if (section.classList.contains('collapsed')) {
+        // Expand
+        section.classList.remove('collapsed');
+        icon.classList.remove('collapsed');
+        text.textContent = 'Collapse';
+    } else {
+        // Collapse
+        section.classList.add('collapsed');
+        icon.classList.add('collapsed');
+        text.textContent = 'Expand';
+    }
+}
+</script>
+{% endblock %}
+

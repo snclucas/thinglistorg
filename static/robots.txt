@@ -1,0 +1,48 @@
+# robots.txt for ThingList
+# This file controls search engine crawler access
+
+User-agent: *
+Allow: /
+Allow: /public-lists
+Allow: /search
+Allow: /static/
+
+# Disallow private user pages from indexing
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /resend-verification-email
+Disallow: /dashboard
+Disallow: /lists
+Disallow: /profile
+Disallow: /preferences
+Disallow: /change-password
+Disallow: /groups
+Disallow: /groups/*/
+Disallow: /create-list
+Disallow: /edit-list
+Disallow: /create-item
+Disallow: /edit-item
+Disallow: /import
+Disallow: /search
+Disallow: /list-settings
+
+# Block known bad bots
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
+# Sitemap location
+Sitemap: https://example.com/sitemap.xml
+
+# Crawl delay (in seconds)
+Crawl-delay: 1
+Request-rate: 1/5s
+

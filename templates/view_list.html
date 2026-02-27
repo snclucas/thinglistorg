@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}{{ list.name }} - View Inventory Items on ThingList{% endblock %}
+
+{% block meta_description %}View and manage items in {{ list.name }} on ThingList. Track quantities, locations, and custom details.{% endblock %}
+
+{% block meta_keywords %}inventory list, items, item tracking, list view, quantity tracking{% endblock %}
+
+{% block meta_robots %}{% if list.is_public %}index, follow{% else %}noindex, follow{% endif %}{% endblock %}
+
+{% block og_title %}{{ list.name }} - ThingList Inventory{% endblock %}
+
+{% block og_description %}View and manage items in {{ list.name }} inventory list on ThingList.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='view-list.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="list-view-container modern-animate-in">
+    <!-- Breadcrumb -->
+    <div class="modern-breadcrumb">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('lists') }}"><i class="fas fa-list"></i> My Lists</a>
+        {% else %}
+            <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
+        {% endif %}
+        <span> / </span>
+        <span style="color: var(--gray-600);">{{ list.name }}</span>
+    </div>
+
+    <!-- List Header -->
+    <div class="list-header-card">
+        <div class="list-header-content">
+            <div class="list-info">
+                <h1 class="list-title">{{ list.name }}</h1>
+
+                {% if list.description %}
+                <div class="list-description">
+                    {{ list.description }}
+                </div>
+                {% endif %}
+
+                <div class="list-meta-row">
+                    <div class="list-meta-item">
+                        <i class="fas fa-box list-meta-icon"></i>
+                        <span><span class="list-meta-value">{{ items|length }}</span> items</span>
+                    </div>
+                    <div class="list-meta-item">
+                        <i class="fas fa-calendar list-meta-icon"></i>
+                        <span>Created <span class="list-meta-value">{{ list.created_at.strftime('%b %d, %Y') }}</span></span>
+                    </div>
+                    {% if list.updated_at and list.updated_at != list.created_at %}
+                    <div class="list-meta-item">
+                        <i class="fas fa-sync list-meta-icon"></i>
+                        <span>Updated <span class="list-meta-value">{{ list.updated_at.strftime('%b %d, %Y') }}</span></span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if list.get_tags_list() %}
+                <div class="list-tags-section">
+                    {% for tag in list.get_tags_list() %}
+                        <span class="modern-badge modern-badge-primary">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="list-actions-group">
+                {% if current_user.is_authenticated and list.user_id == current_user.id %}
+                    <a href="{{ url_for('edit_list', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
+                        <i class="fas fa-pen"></i>
+                        Edit List
+                    </a>
+                    <a href="{{ url_for('share_list', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
+                        <i class="fas fa-share-alt"></i>
+                        Share
+                    </a>
+                    <a href="{{ url_for('list_settings', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <a href="{{ url_for('export_items', list_id=list.id, format='json') }}" class="modern-btn modern-btn-secondary" title="Export as JSON">
+                            <i class="fas fa-download"></i>
+                            Export (JSON)
+                        </a>
+                        <a href="{{ url_for('export_items', list_id=list.id, format='csv') }}" class="modern-btn modern-btn-secondary" title="Export as CSV">
+                            <i class="fas fa-download"></i>
+                            Export (CSV)
+                        </a>
+                        <a href="{{ url_for('import_items', list_id=list.id) }}" class="modern-btn modern-btn-secondary" title="Import items">
+                            <i class="fas fa-upload"></i>
+                            Import
+                        </a>
+                    </div>
+                    <form method="POST" action="{{ url_for('delete_list', list_id=list.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="modern-btn modern-btn-danger" style="width: 100%;" onclick="return confirm('Delete this list and all its items? This cannot be undone.');">
+                            <i class="fas fa-trash"></i>
+                            Delete List
+                        </button>
+                    </form>
+                {% elif not current_user.is_authenticated %}
+                    <a href="{{ url_for('login', next=request.url) }}" class="modern-btn modern-btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login to Edit
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Section -->
+    <div class="items-section-card">
+        <div class="items-section-header">
+            {% if can_edit %}
+            <a href="{{ url_for('create_item', list_id=list.id) }}" class="modern-btn modern-btn-primary">
+                <i class="fas fa-plus"></i>
+                Add Item
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Pagination Controls -->
+        {% if pages > 1 or total > 0 %}
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div style="font-size: 0.95rem; color: #6b7280;">
+                Showing <strong>{{ (page - 1) * per_page + 1 }}</strong> to <strong>{{ [page * per_page, total] | min }}</strong> of <strong>{{ total }}</strong> items
+            </div>
+
+            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <form method="GET" style="display: flex; gap: 0.5rem; align-items: center;">
+                    <label for="per_page_select" style="font-weight: 500; color: #1f2937; font-size: 0.95rem;">Items per page:</label>
+                    <select name="per_page" id="per_page_select" class="pagination-select" onchange="this.form.submit()" style="padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
+                        <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+                        <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                        <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                        <option value="30" {% if per_page == 30 %}selected{% endif %}>30</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                    </select>
+                    <!-- Preserve filter parameters -->
+                    {% if filters.q %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
+                    {% if filters.tag %}<input type="hidden" name="tag" value="{{ filters.tag }}">{% endif %}
+                    {% if filters.type %}<input type="hidden" name="type" value="{{ filters.type }}">{% endif %}
+                    {% if filters.location %}<input type="hidden" name="location" value="{{ filters.location }}">{% endif %}
+                    {% if filters.low_stock %}<input type="hidden" name="low_stock" value="{{ filters.low_stock }}">{% endif %}
+                </form>
+
+                <div style="font-weight: 500; color: #1f2937;">Page {{ page }} of {{ pages }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if items %}
+        <div class="items-table-container">
+            <table class="modern-items-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        {% if list.is_field_visible('description') %}<th>Description</th>{% endif %}
+                        {% if list.is_field_visible('item_type') %}<th>Type</th>{% endif %}
+                        {% if list.is_field_visible('location') %}<th>Location</th>{% endif %}
+                        {% if list.is_field_visible('quantity') %}<th>Quantity</th>{% endif %}
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="item-name-cell">
+                            <a href="{{ url_for('view_item', item_id=item.id) }}" class="item-name-link">
+                                {{ item.name }}
+                            </a>
+                        </td>
+                        {% if list.is_field_visible('description') %}
+                        <td class="item-description-cell">
+                            {% if item.description %}
+                                {{ item.description }}
+                            {% else %}
+                                <span style="color: var(--gray-400);">—</span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                        {% if list.is_field_visible('item_type') %}
+                        <td class="item-meta-cell">
+                            {% if item.item_type %}
+                                <span class="modern-badge modern-badge-primary">{{ item.item_type.name }}</span>
+                            {% else %}
+                                <span style="color: var(--gray-400);">—</span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                        {% if list.is_field_visible('location') %}
+                        <td class="item-meta-cell">
+                            {% if item.location %}
+                                <i class="fas fa-map-pin"></i> {{ item.location }}
+                            {% else %}
+                                <span style="color: var(--gray-400);">—</span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                        {% if list.is_field_visible('quantity') %}
+                        <td>
+                            <span class="item-quantity-badge">{{ item.quantity }}</span>
+                        </td>
+                        {% endif %}
+                        <td>
+                            <div class="item-actions-cell">
+                                {% if can_edit %}
+                                    <a href="{{ url_for('edit_item', item_id=item.id) }}" class="item-action-btn item-btn-edit">Edit</a>
+                                    <form method="POST" action="{{ url_for('delete_item', item_id=item.id) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="item-action-btn item-btn-delete" onclick="return confirm('Delete this item?');">Delete</button>
+                                    </form>
+                                {% else %}
+                                    <span style="color: var(--gray-400); font-size: 0.9rem;">Read-only</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination Navigation -->
+            {% if pages > 1 %}
+            <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 2rem; flex-wrap: wrap; padding: 1.5rem 0;">
+                <!-- Previous Button -->
+                {% if page > 1 %}
+                    <a href="{{ url_for('view_list', list_id=list.id, page=page-1, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn pagination-btn-enabled">
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
+                    </a>
+                {% else %}
+                    <button class="pagination-btn pagination-btn-disabled" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
+                    </button>
+                {% endif %}
+
+                <!-- Page Numbers -->
+                {% set start_page = [1, page - 2] | max %}
+                {% set end_page = [pages, page + 2] | min %}
+
+                {% if start_page > 1 %}
+                    <a href="{{ url_for('view_list', list_id=list.id, page=1, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn">
+                        1
+                    </a>
+                    {% if start_page > 2 %}
+                        <span style="padding: 0.5rem; color: #6b7280;">...</span>
+                    {% endif %}
+                {% endif %}
+
+                {% for p in range(start_page, end_page + 1) %}
+                    {% if p == page %}
+                        <button class="pagination-btn pagination-btn-active" disabled>{{ p }}</button>
+                    {% else %}
+                        <a href="{{ url_for('view_list', list_id=list.id, page=p, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn">
+                            {{ p }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if end_page < pages %}
+                    {% if end_page < pages - 1 %}
+                        <span style="padding: 0.5rem; color: #6b7280;">...</span>
+                    {% endif %}
+                    <a href="{{ url_for('view_list', list_id=list.id, page=pages, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn">
+                        {{ pages }}
+                    </a>
+                {% endif %}
+
+                <!-- Next Button -->
+                {% if page < pages %}
+                    <a href="{{ url_for('view_list', list_id=list.id, page=page+1, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn pagination-btn-enabled">
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                {% else %}
+                    <button class="pagination-btn pagination-btn-disabled" disabled>
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="items-empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-inbox"></i>
+            </div>
+            <h3 class="empty-state-title">No items yet</h3>
+            <p class="empty-state-text">Add your first item to this list</p>
+            <a href="{{ url_for('create_item', list_id=list.id) }}" class="modern-btn modern-btn-primary">
+                <i class="fas fa-plus"></i>
+                Add First Item
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="back-link-container">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('lists') }}" class="back-link">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Lists</span>
+            </a>
+        {% else %}
+            <a href="{{ url_for('index') }}" class="back-link">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Home</span>
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

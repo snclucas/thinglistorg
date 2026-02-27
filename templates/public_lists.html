@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}Public Lists - Discover Shared Inventories on ThingList{% endblock %}
+
+{% block meta_description %}Browse public inventory lists on ThingList. Discover how others organize their items and learn from shared lists.{% endblock %}
+
+{% block meta_keywords %}public lists, shared inventories, list discovery, community lists, inventory examples{% endblock %}
+
+{% block meta_robots %}index, follow{% endblock %}
+
+{% block og_title %}Public Lists - ThingList{% endblock %}
+
+{% block og_description %}Discover and browse public inventory lists shared on ThingList.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='lists.css') }}">
+<style>
+    .public-lists-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 2rem;
+        border-radius: var(--radius-xl);
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .public-lists-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .public-lists-header p {
+        font-size: 1.1rem;
+        opacity: 0.95;
+    }
+
+    .search-box {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--radius-lg);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-md);
+    }
+
+    .search-box form {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .search-box input {
+        flex: 1;
+        min-width: 250px;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+    }
+
+    .search-box button {
+        padding: 0.75rem 2rem;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .search-box button:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .lists-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .list-card {
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        transition: all 0.3s;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .list-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-4px);
+        border-color: #667eea;
+    }
+
+    .list-card-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .list-card-description {
+        color: var(--gray-600);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        flex-grow: 1;
+    }
+
+    .list-card-meta {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+        color: var(--gray-500);
+        flex-wrap: wrap;
+    }
+
+    .list-card-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .list-card-action {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background: #667eea;
+        color: white;
+        text-decoration: none;
+        border-radius: var(--radius-md);
+        text-align: center;
+        transition: all 0.3s;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .list-card-action:hover {
+        background: #5568d3;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state-title {
+        font-size: 1.5rem;
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state-text {
+        color: var(--gray-500);
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+    }
+
+    .pagination-btn {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--gray-300);
+        background: white;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        text-decoration: none;
+        color: var(--gray-700);
+        transition: all 0.3s;
+    }
+
+    .pagination-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    .pagination-btn.active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+
+    .pagination-btn.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .login-prompt {
+        background: #f0f4ff;
+        border: 1px solid #667eea;
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .login-prompt p {
+        margin-bottom: 1rem;
+        color: var(--gray-700);
+    }
+
+    .login-prompt a {
+        display: inline-block;
+        padding: 0.75rem 2rem;
+        background: #667eea;
+        color: white;
+        text-decoration: none;
+        border-radius: var(--radius-md);
+        transition: all 0.3s;
+    }
+
+    .login-prompt a:hover {
+        background: #5568d3;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
+    <!-- Header -->
+    <div class="public-lists-header">
+        <h1><i class="fas fa-globe"></i> Explore Public Lists</h1>
+        <p>Discover and view public lists shared by the community</p>
+    </div>
+
+    <!-- Login Prompt for Anonymous Users -->
+    {% if not current_user.is_authenticated %}
+    <div class="login-prompt">
+        <p><strong>Create your own lists!</strong> Sign in to start organizing your items.</p>
+        <a href="{{ url_for('login') }}">Sign In</a>
+        <span style="margin: 0 1rem;">or</span>
+        <a href="{{ url_for('register') }}" style="background: #4c5282;">Create Account</a>
+    </div>
+    {% endif %}
+
+    <!-- Search Box -->
+    <div class="search-box">
+        <form method="GET">
+            <input type="text" name="q" placeholder="Search public lists..." value="{{ search_q }}">
+            <button type="submit"><i class="fas fa-search"></i> Search</button>
+            {% if search_q %}
+                <a href="{{ url_for('public_lists') }}" style="padding: 0.75rem 1.5rem; background: var(--gray-300); color: var(--gray-700); border: none; border-radius: var(--radius-md); cursor: pointer; text-decoration: none; font-weight: 600; display: flex; align-items: center;">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Lists Grid -->
+    {% if lists %}
+    <div class="lists-grid">
+        {% for list in lists %}
+            <div class="list-card">
+                <h3 class="list-card-title">{{ list.name }}</h3>
+                {% if list.description %}
+                    <p class="list-card-description">{{ list.description }}</p>
+                {% else %}
+                    <p class="list-card-description" style="color: var(--gray-400);">No description</p>
+                {% endif %}
+
+                <div class="list-card-meta">
+                    <div class="list-card-meta-item">
+                        <i class="fas fa-box"></i>
+                        <span>{{ list.items|length }} items</span>
+                    </div>
+                    <div class="list-card-meta-item">
+                        <i class="fas fa-user"></i>
+                        <span>{{ list.owner.username }}</span>
+                    </div>
+                    <div class="list-card-meta-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>{{ list.created_at.strftime('%b %d, %Y') }}</span>
+                    </div>
+                </div>
+
+                <a href="{{ url_for('view_list', list_id=list.id) }}" class="list-card-action">
+                    View List <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if pages > 1 %}
+    <div class="pagination-container">
+        {% if page > 1 %}
+            <a href="{{ url_for('public_lists', page=page-1, per_page=per_page, q=search_q) }}" class="pagination-btn">
+                <i class="fas fa-chevron-left"></i> Previous
+            </a>
+        {% else %}
+            <button class="pagination-btn disabled" disabled>
+                <i class="fas fa-chevron-left"></i> Previous
+            </button>
+        {% endif %}
+
+        {% set start_page = [1, page - 2] | max %}
+        {% set end_page = [pages, page + 2] | min %}
+
+        {% if start_page > 1 %}
+            <a href="{{ url_for('public_lists', page=1, per_page=per_page, q=search_q) }}" class="pagination-btn">1</a>
+            {% if start_page > 2 %}<span style="padding: 0.5rem; color: var(--gray-500);">...</span>{% endif %}
+        {% endif %}
+
+        {% for p in range(start_page, end_page + 1) %}
+            {% if p == page %}
+                <button class="pagination-btn active" disabled>{{ p }}</button>
+            {% else %}
+                <a href="{{ url_for('public_lists', page=p, per_page=per_page, q=search_q) }}" class="pagination-btn">{{ p }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if end_page < pages %}
+            {% if end_page < pages - 1 %}<span style="padding: 0.5rem; color: var(--gray-500);">...</span>{% endif %}
+            <a href="{{ url_for('public_lists', page=pages, per_page=per_page, q=search_q) }}" class="pagination-btn">{{ pages }}</a>
+        {% endif %}
+
+        {% if page < pages %}
+            <a href="{{ url_for('public_lists', page=page+1, per_page=per_page, q=search_q) }}" class="pagination-btn">
+                Next <i class="fas fa-chevron-right"></i>
+            </a>
+        {% else %}
+            <button class="pagination-btn disabled" disabled>
+                Next <i class="fas fa-chevron-right"></i>
+            </button>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="fas fa-inbox"></i>
+        </div>
+        <h3 class="empty-state-title">No public lists found</h3>
+        <p class="empty-state-text">
+            {% if search_q %}
+                No lists match your search. Try searching for something different.
+            {% else %}
+                There are no public lists yet. <a href="{{ url_for('register') }}" style="color: #667eea;">Create an account</a> to share your lists!
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Back Link -->
+    <div style="text-align: center; margin-top: 2rem;">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('lists') }}" style="color: #667eea; text-decoration: none; font-weight: 600;">
+                <i class="fas fa-arrow-left"></i> Back to My Lists
+            </a>
+        {% else %}
+            <a href="{{ url_for('index') }}" style="color: #667eea; text-decoration: none; font-weight: 600;">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+

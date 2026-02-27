@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Group - ThingList{% endblock %}
+
+{% block meta_description %}Edit your group settings on ThingList. Manage group information and collaboration options.{% endblock %}
+
+{% block meta_keywords %}edit group, group settings, manage group{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Edit Group - ThingList{% endblock %}
+
+{% block og_description %}Edit and manage group settings.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='forms.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="modern-animate-in">
+    <div class="form-container">
+        <div class="form-header">
+            <h1 class="form-title">Edit Group Settings</h1>
+            <p class="form-subtitle">Update your group's information and permissions</p>
+        </div>
+
+        <form method="POST" class="modern-form" novalidate>
+            {{ form.hidden_tag() }}
+
+            <!-- Name Field -->
+            <div class="form-group">
+                <label for="name" class="form-label">Group Name *</label>
+                {% if form.name.errors %}
+                    {{ form.name(class="form-control form-control-error") }}
+                    <div class="form-error">
+                        {% for error in form.name.errors %}
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>{{ error }}</span><br>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.name(class="form-control") }}
+                {% endif %}
+            </div>
+
+            <!-- Description Field -->
+            <div class="form-group">
+                <label for="description" class="form-label">Description</label>
+                {% if form.description.errors %}
+                    {{ form.description(class="form-control form-control-error", rows="4") }}
+                    <div class="form-error">
+                        {% for error in form.description.errors %}
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>{{ error }}</span><br>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.description(class="form-control", rows="4") }}
+                {% endif %}
+            </div>
+
+            <!-- Settings Card -->
+            <div class="modern-card settings-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-cog"></i>
+                        Member Permissions
+                    </h3>
+                </div>
+                <div class="settings-options">
+                    <div class="form-check modern-form-check">
+                        {{ form.allow_members_create_lists(class="form-check-input") }}
+                        <label class="form-check-label" for="allow_members_create_lists">
+                            <span class="check-text">Allow members to create lists</span>
+                            <span class="check-help">Members can add new lists to this group</span>
+                        </label>
+                    </div>
+
+                    <div class="form-check modern-form-check">
+                        {{ form.allow_members_edit_shared_lists(class="form-check-input") }}
+                        <label class="form-check-label" for="allow_members_edit_shared_lists">
+                            <span class="check-text">Allow members to edit lists</span>
+                            <span class="check-help">Members can modify items in group lists</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                {{ form.submit(class="modern-btn modern-btn-primary modern-btn-lg", value="Update Group") }}
+                <a href="{{ url_for('view_group', group_id=group.id) }}" class="modern-btn modern-btn-secondary modern-btn-lg">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .form-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .form-subtitle {
+        font-size: 1rem;
+        color: var(--gray-600);
+        margin: 0;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--gray-900);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+        font-family: inherit;
+        transition: all var(--transition-fast);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-500);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-control-error {
+        border-color: var(--red-500);
+    }
+
+    .form-control-error:focus {
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
+    .form-error {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        background: rgba(239, 68, 68, 0.05);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: var(--radius-md);
+        color: var(--red-700);
+        font-size: 0.875rem;
+    }
+
+    .settings-card {
+        margin: 1.5rem 0;
+        border: 1px solid var(--gray-200);
+    }
+
+    .settings-options {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .modern-form-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: background var(--transition-fast);
+    }
+
+    .modern-form-check:hover {
+        background: var(--gray-100);
+    }
+
+    .form-check-input {
+        margin-top: 0.25rem;
+        cursor: pointer;
+        width: 20px;
+        height: 20px;
+        min-width: 20px;
+    }
+
+    .check-text {
+        display: block;
+        font-weight: 500;
+        color: var(--gray-900);
+        margin-bottom: 0.25rem;
+    }
+
+    .check-help {
+        display: block;
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+
+    .form-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 2rem;
+    }
+
+    .modern-btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        min-height: 44px;
+    }
+
+    @media (max-width: 768px) {
+        .form-container {
+            margin: 1rem auto;
+        }
+
+        .form-title {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+

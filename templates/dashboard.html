@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Your Inventory Management Hub{% endblock %}
+
+{% block meta_description %}Your ThingList dashboard - manage all your inventory lists, view statistics, and organize your items in one place.{% endblock %}
+
+{% block meta_keywords %}inventory dashboard, list management, item tracking, inventory overview{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Your Inventory Dashboard - ThingList{% endblock %}
+
+{% block og_description %}Manage all your inventory lists, view statistics, and organize items in your ThingList dashboard.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+        border-left: 4px solid #2563eb;
+    }
+
+    .dashboard-header h1 {
+        color: #2563eb;
+        margin-bottom: 0.5rem;
+        font-size: 2rem;
+        font-weight: 600;
+    }
+
+    .dashboard-header p {
+        color: #666;
+        font-size: 1.05rem;
+    }
+
+    .user-info {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+    }
+
+    .user-info h2 {
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .info-row {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #2563eb;
+    }
+
+    .info-value {
+        color: #333;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+
+    .btn-primary {
+        background: #2563eb;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #333;
+    }
+
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        transform: translateY(-2px);
+    }
+
+    .summary-section {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+    }
+
+    .summary-section h2 {
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .summary-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .summary-item {
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .summary-item:last-child {
+        border-bottom: none;
+    }
+
+    .summary-item-name {
+        color: #2563eb;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+
+    .summary-item-name:hover {
+        color: #1d4ed8;
+    }
+
+    .summary-item-link {
+        color: #6b7280;
+        font-size: 0.9rem;
+        text-decoration: none;
+        padding: 0.5rem 1rem;
+        background: #f3f4f6;
+        border-radius: 4px;
+        transition: all 0.3s;
+    }
+
+    .summary-item-link:hover {
+        background: #e5e7eb;
+        color: #1f2937;
+    }
+
+    .empty-message {
+        color: #6b7280;
+        font-style: italic;
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .summary-badge {
+        display: inline-block;
+        background: #dbeafe;
+        color: #0c4a6e;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="user-info">
+    <h2>Quick Actions</h2>
+    <div class="action-buttons">
+        <a href="{{ url_for('lists') }}" class="btn btn-primary">📋 View My Lists</a>
+        <a href="{{ url_for('create_list') }}" class="btn btn-primary">➕ Create New List</a>
+    </div>
+</div>
+
+<!-- Groups Summary -->
+{% if owned_groups or member_groups %}
+<div class="summary-section">
+    <h2>
+        <i class="fas fa-users" style="color: #2563eb;"></i>
+        Your Groups
+    </h2>
+
+    {% if owned_groups %}
+    <div style="margin-bottom: 2rem;">
+        <h3 style="color: #1f2937; font-size: 1.1rem; margin-bottom: 1rem;">
+            Groups You Own <span class="summary-badge">{{ owned_groups|length }}</span>
+        </h3>
+        <ul class="summary-list">
+            {% for group in owned_groups %}
+            <li class="summary-item">
+                <a href="{{ url_for('view_group', group_id=group.id) }}" class="summary-item-name">
+                    {{ group.name }}
+                </a>
+                <a href="{{ url_for('view_group', group_id=group.id) }}" class="summary-item-link">
+                    <i class="fas fa-arrow-right"></i> View
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if member_groups %}
+    <div>
+        <h3 style="color: #1f2937; font-size: 1.1rem; margin-bottom: 1rem;">
+            Groups You're In <span class="summary-badge">{{ member_groups|length }}</span>
+        </h3>
+        <ul class="summary-list">
+            {% for group in member_groups %}
+            <li class="summary-item">
+                <a href="{{ url_for('view_group', group_id=group.id) }}" class="summary-item-name">
+                    {{ group.name }}
+                </a>
+                <a href="{{ url_for('view_group', group_id=group.id) }}" class="summary-item-link">
+                    <i class="fas fa-arrow-right"></i> View
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Lists Summary -->
+{% if user_lists or shared_lists %}
+<div class="summary-section">
+    <h2>
+        <i class="fas fa-list" style="color: #2563eb;"></i>
+        Your Lists
+    </h2>
+
+    {% if user_lists %}
+    <div style="margin-bottom: 2rem;">
+        <h3 style="color: #1f2937; font-size: 1.1rem; margin-bottom: 1rem;">
+            Your Lists <span class="summary-badge">{{ user_lists|length }}</span>
+        </h3>
+        <ul class="summary-list">
+            {% for list in user_lists %}
+            <li class="summary-item">
+                <a href="{{ url_for('view_list', list_id=list.id) }}" class="summary-item-name">
+                    {{ list.name }}
+                </a>
+                <a href="{{ url_for('view_list', list_id=list.id) }}" class="summary-item-link">
+                    <i class="fas fa-arrow-right"></i> View
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('lists') }}" style="display: inline-block; margin-top: 1rem; color: #2563eb; text-decoration: none; font-weight: 600;">
+            View All Lists <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
+        </a>
+    </div>
+    {% endif %}
+
+    {% if shared_lists %}
+    <div>
+        <h3 style="color: #1f2937; font-size: 1.1rem; margin-bottom: 1rem;">
+            Lists Shared With You <span class="summary-badge">{{ shared_lists|length }}</span>
+        </h3>
+        <ul class="summary-list">
+            {% for list in shared_lists %}
+            <li class="summary-item">
+                <a href="{{ url_for('view_list', list_id=list.id) }}" class="summary-item-name">
+                    {{ list.name }}
+                </a>
+                <a href="{{ url_for('view_list', list_id=list.id) }}" class="summary-item-link">
+                    <i class="fas fa-arrow-right"></i> View
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('lists') }}" style="display: inline-block; margin-top: 1rem; color: #2563eb; text-decoration: none; font-weight: 600;">
+            View All Lists <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+

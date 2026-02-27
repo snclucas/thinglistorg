@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Add Group Member - ThingList{% endblock %}
+
+{% block meta_description %}Add a new member to your ThingList group. Invite users and assign roles for collaboration.{% endblock %}
+
+{% block meta_keywords %}add member, invite user, group member, user management{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}Add Group Member - ThingList{% endblock %}
+
+{% block og_description %}Add members to your collaboration group.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='forms.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="modern-animate-in">
+    <div class="form-container">
+        <div class="form-header">
+            <h1 class="form-title">Add Member to Group</h1>
+            <p class="form-subtitle">Invite a user to join {{ group.name }}</p>
+        </div>
+
+        <form method="POST" class="modern-form" novalidate>
+            {{ form.hidden_tag() }}
+
+            <!-- Username Field -->
+            <div class="form-group">
+                <label for="username" class="form-label">Username *</label>
+                {% if form.username.errors %}
+                    {{ form.username(class="form-control form-control-error", placeholder="Enter username") }}
+                    <div class="form-error">
+                        {% for error in form.username.errors %}
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>{{ error }}</span><br>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.username(class="form-control", placeholder="Enter username") }}
+                    <p class="form-help">The username of the person you want to add</p>
+                {% endif %}
+            </div>
+
+            <!-- Role Field -->
+            <div class="form-group">
+                <label for="role" class="form-label">Role *</label>
+                {{ form.role(class="form-select") }}
+                <div class="role-description">
+                    <div class="role-info">
+                        <strong>Admin:</strong>
+                        <span>Can manage members and create/edit lists</span>
+                    </div>
+                    <div class="role-info">
+                        <strong>Member:</strong>
+                        <span>Can view and edit lists (depends on group settings)</span>
+                    </div>
+                    <div class="role-info">
+                        <strong>Viewer:</strong>
+                        <span>Can only view lists and items</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                {{ form.submit(class="modern-btn modern-btn-success modern-btn-lg") }}
+                <a href="{{ url_for('view_group', group_id=group.id) }}" class="modern-btn modern-btn-secondary modern-btn-lg">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .form-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .form-subtitle {
+        font-size: 1rem;
+        color: var(--gray-600);
+        margin: 0;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--gray-900);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control,
+    .form-select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+        font-family: inherit;
+        transition: all var(--transition-fast);
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        outline: none;
+        border-color: var(--primary-500);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-control-error {
+        border-color: var(--red-500);
+    }
+
+    .form-control-error:focus {
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
+    .form-error {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        background: rgba(239, 68, 68, 0.05);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: var(--radius-md);
+        color: var(--red-700);
+        font-size: 0.875rem;
+    }
+
+    .form-help {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        margin-top: 0.5rem;
+        margin-bottom: 0;
+    }
+
+    .role-description {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: var(--radius-md);
+        border-left: 3px solid var(--primary-500);
+    }
+
+    .role-info {
+        display: grid;
+        grid-template-columns: 100px 1fr;
+        gap: 0.75rem;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .role-info:last-child {
+        margin-bottom: 0;
+    }
+
+    .role-info strong {
+        color: var(--gray-900);
+    }
+
+    .role-info span {
+        color: var(--gray-600);
+    }
+
+    .form-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 2rem;
+    }
+
+    .modern-btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        min-height: 44px;
+    }
+
+    @media (max-width: 768px) {
+        .form-container {
+            margin: 1rem auto;
+        }
+
+        .form-title {
+            font-size: 1.5rem;
+        }
+
+        .role-info {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+

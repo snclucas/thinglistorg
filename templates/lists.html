@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}My Lists - ThingList Inventory Management{% endblock %}
+
+{% block meta_description %}Access all your inventory lists on ThingList. View, organize, and manage your items across multiple lists.{% endblock %}
+
+{% block meta_keywords %}my lists, inventory lists, list management, item organization{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block og_title %}My Lists - ThingList{% endblock %}
+
+{% block og_description %}View and manage all your inventory lists with ThingList.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='lists.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="modern-animate-in">
+    <!-- Page Header -->
+    {% if lists %}
+    <div class="page-header">
+        <a href="{{ url_for('create_list') }}" class="modern-btn modern-btn-primary">
+            <i class="fas fa-plus"></i>
+            Create New List
+        </a>
+    </div>
+{% endif %}
+
+    <!-- Statistics Bar -->
+    {% if lists %}
+    {% set total_items = namespace(count=0) %}
+    {% for item in lists %}
+        {% set total_items.count = total_items.count + item.list.items|length %}
+    {% endfor %}
+    <div class="stats-bar">
+        <div class="stat-box">
+            <div class="stat-value">{{ lists|length }}</div>
+            <div class="stat-label">Total Lists</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">{{ total_items.count }}</div>
+            <div class="stat-label">Total Items</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">
+                {% if lists|length > 0 %}
+                    {{ (total_items.count / lists|length)|round|int }}
+                {% else %}
+                    0
+                {% endif %}
+            </div>
+            <div class="stat-label">Avg Items/List</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Lists Table -->
+    {% if lists %}
+        <div class="lists-table-container">
+            <table class="lists-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Items</th>
+                        <th>Tags</th>
+                        <th>Type</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in lists %}
+                    {% set list = item.list %}
+                    <tr>
+                        <td data-label="Name" class="list-name-cell">
+                            <a href="{{ url_for('view_list', list_id=list.id) }}" class="list-name-link">
+                                <i class="fas fa-list"></i>
+                                {{ list.name }}
+                            </a>
+                        </td>
+                        <td data-label="Description" class="list-description-cell">
+                            {% if list.description %}
+                                {{ list.description }}
+                            {% else %}
+                                <span style="color: var(--gray-400);">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Items" class="list-meta-cell">
+                            {{ list.items|length }}
+                        </td>
+                        <td data-label="Tags" class="list-tags-cell">
+                            {% if list.get_tags_list() %}
+                                {% for tag in list.get_tags_list()[:3] %}
+                                    <span class="modern-badge modern-badge-primary">{{ tag }}</span>
+                                {% endfor %}
+                                {% if list.get_tags_list()|length > 3 %}
+                                    <span class="modern-badge modern-badge-primary">+{{ list.get_tags_list()|length - 3 }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: var(--gray-400);">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Type">
+                            {% if item.type == 'owned' %}
+                                <span class="modern-badge modern-badge-primary">Owner</span>
+                            {% elif item.type == 'shared' %}
+                                <span class="modern-badge modern-badge-success">
+                                    {% if item.permission == 'edit' %}
+                                        Shared (Edit)
+                                    {% else %}
+                                        Shared (View)
+                                    {% endif %}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions">
+                            <div class="list-actions-cell">
+                                {% if item.type == 'owned' %}
+                                    <form method="POST" action="{{ url_for('delete_list', list_id=list.id) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="table-action-btn table-btn-delete" onclick="return confirm('Delete this list and all its items? This cannot be undone.');">
+                                            <i class="fas fa-trash"></i>
+                                            Delete
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span style="color: var(--gray-400); font-size: 0.9rem;">Shared by owner</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-list"></i>
+            </div>
+            <h2 class="empty-title">No Lists Yet</h2>
+            <p class="empty-text">Create your first inventory list to start organizing your items!</p>
+            <a href="{{ url_for('create_list') }}" class="modern-btn modern-btn-primary">
+                <i class="fas fa-plus"></i>
+                Create Your First List
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

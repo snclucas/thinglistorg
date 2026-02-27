@@ -1,0 +1,487 @@
+/*
+ * ThingList Modern Theme
+ * A clean, contemporary design system for lists and items
+ */
+
+:root {
+    /* Primary Colors */
+    --primary-50: #eff6ff;
+    --primary-100: #dbeafe;
+    --primary-200: #bfdbfe;
+    --primary-300: #93c5fd;
+    --primary-400: #60a5fa;
+    --primary-500: #3b82f6;
+    --primary-600: #2563eb;
+    --primary-700: #1d4ed8;
+    --primary-800: #1e40af;
+    --primary-900: #1e3a8a;
+
+    /* Neutral Colors */
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+
+    /* Accent Colors */
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    --danger: #ef4444;
+    --danger-light: #fee2e2;
+    --info: #3b82f6;
+    --info-light: #dbeafe;
+
+    /* Spacing */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    --space-2xl: 3rem;
+
+    /* Border Radius */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-full: 9999px;
+
+    /* Shadows - Flat Design (subtle) */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    --shadow-md: 0 2px 4px 0 rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 4px 8px 0 rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 8px 16px 0 rgba(0, 0, 0, 0.06);
+
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Monochrome Icon System - Flat Filled Style */
+.icon {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    vertical-align: middle;
+    fill: currentColor;
+    stroke: none;
+    color: inherit;
+}
+
+.icon-sm {
+    width: 16px;
+    height: 16px;
+}
+
+.icon-md {
+    width: 20px;
+    height: 20px;
+}
+
+.icon-lg {
+    width: 24px;
+    height: 24px;
+}
+
+.icon-xl {
+    width: 32px;
+    height: 32px;
+}
+
+/* Flat Icon Backgrounds */
+.icon-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    padding: 0.5rem;
+}
+
+.icon-container-primary {
+    background: var(--primary-50);
+    color: var(--primary-600);
+}
+
+.icon-container-success {
+    background: var(--success-light);
+    color: var(--success);
+}
+
+.icon-container-warning {
+    background: var(--warning-light);
+    color: var(--warning);
+}
+
+.icon-container-danger {
+    background: var(--danger-light);
+    color: var(--danger);
+}
+
+.icon-container-gray {
+    background: var(--gray-100);
+    color: var(--gray-600);
+}
+
+/* Typography Enhancements */
+.modern-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+}
+
+.modern-subtitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    letter-spacing: -0.01em;
+}
+
+.modern-body {
+    font-size: 0.9375rem;
+    color: var(--gray-600);
+    line-height: 1.6;
+}
+
+/* Card Components - Flat Design */
+.modern-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+    transition: all var(--transition-base);
+}
+
+.modern-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--gray-300);
+}
+
+.modern-card-header {
+    padding: var(--space-xl);
+    border-bottom: 1px solid var(--gray-200);
+    background: white;
+}
+
+.modern-card-body {
+    padding: var(--space-xl);
+}
+
+/* Button Styles - Flat Design */
+.modern-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: 0.625rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+/* Button Size Variants */
+.modern-btn-xs {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+.modern-btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+}
+
+.modern-btn-lg {
+    padding: 0.875rem 1.75rem;
+    font-size: 1rem;
+}
+
+.modern-btn-primary {
+    background: var(--primary-600);
+    color: white;
+    border-color: var(--primary-600);
+}
+
+.modern-btn-primary:hover {
+    background: var(--primary-700);
+    border-color: var(--primary-700);
+}
+
+.modern-btn-secondary {
+    background: white;
+    color: var(--gray-700);
+    border-color: var(--gray-300);
+}
+
+.modern-btn-secondary:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-400);
+}
+
+.modern-btn-danger {
+    background: white;
+    color: var(--danger);
+    border-color: var(--danger-light);
+}
+
+.modern-btn-danger:hover {
+    background: var(--danger-light);
+    border-color: var(--danger);
+}
+
+.modern-btn-success {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+
+.modern-btn-success:hover {
+    background: #059669;
+    border-color: #059669;
+}
+
+/* Badge Components */
+.modern-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 0.375rem 0.875rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    letter-spacing: 0.025em;
+}
+
+.modern-badge-primary {
+    background: #1d4ed8;
+    color: white;
+}
+
+.modern-badge-success {
+    background: var(--success-light);
+    color: var(--success);
+}
+
+.modern-badge-warning {
+    background: var(--warning-light);
+    color: var(--warning);
+}
+
+.modern-badge-danger {
+    background: var(--danger-light);
+    color: var(--danger);
+}
+
+/* Table Styles */
+.modern-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.modern-table thead {
+    background: linear-gradient(to bottom, var(--gray-50), white);
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.modern-table th {
+    padding: 1rem 1.5rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--gray-700);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.modern-table tbody tr {
+    border-bottom: 1px solid var(--gray-100);
+    transition: background-color var(--transition-fast);
+}
+
+.modern-table tbody tr:hover {
+    background: var(--gray-50);
+}
+
+.modern-table td {
+    padding: 1.25rem 1.5rem;
+    color: var(--gray-700);
+}
+
+/* Grid Layouts */
+.modern-grid {
+    display: grid;
+    gap: var(--space-lg);
+}
+
+.modern-grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.modern-grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* Stat Cards */
+.modern-stat-card {
+    background: white;
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    box-shadow: var(--shadow-sm);
+}
+
+.modern-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-600);
+    line-height: 1;
+}
+
+.modern-stat-label {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+    margin-top: var(--space-sm);
+}
+
+/* Icon Wrapper */
+.modern-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--radius-lg);
+    font-size: 1.25rem;
+}
+
+.modern-icon-primary {
+    background: var(--primary-100);
+    color: var(--primary-600);
+}
+
+.modern-icon-success {
+    background: var(--success-light);
+    color: var(--success);
+}
+
+.modern-icon-warning {
+    background: var(--warning-light);
+    color: var(--warning);
+}
+
+/* Empty State */
+.modern-empty-state {
+    text-align: center;
+    padding: var(--space-2xl);
+}
+
+.modern-empty-icon {
+    font-size: 4rem;
+    opacity: 0.3;
+    margin-bottom: var(--space-lg);
+}
+
+.modern-empty-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: var(--space-sm);
+}
+
+.modern-empty-text {
+    color: var(--gray-500);
+    font-size: 0.9375rem;
+}
+
+/* Breadcrumb */
+.modern-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 0.875rem;
+    color: var(--gray-500);
+    margin-bottom: var(--space-lg);
+}
+
+.modern-breadcrumb a {
+    color: var(--primary-600);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.modern-breadcrumb a:hover {
+    color: var(--primary-700);
+    text-decoration: underline;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modern-animate-in {
+    animation: fadeIn var(--transition-slow) ease;
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+    .modern-title {
+        font-size: 1.5rem;
+    }
+
+    .modern-card-header,
+    .modern-card-body {
+        padding: var(--space-lg);
+    }
+
+    .modern-table th,
+    .modern-table td {
+        padding: 0.75rem 1rem;
+    }
+
+    .modern-btn {
+        padding: 0.625rem 1rem;
+        font-size: 0.9rem;
+        min-height: 44px;
+    }
+
+    input, textarea, select {
+        font-size: 16px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .modern-btn {
+        padding: 0.625rem 0.875rem;
+        font-size: 0.875rem;
+        min-height: 40px;
+    }
+
+    .modern-btn-primary,
+    .modern-btn-secondary {
+        width: 100%;
+    }
+}
+

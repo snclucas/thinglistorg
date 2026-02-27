@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Home - ThingList | Inventory Management Made Easy{% endblock %}
+
+{% block meta_description %}Welcome to ThingList - the easiest way to organize, manage, and track your inventory. Create unlimited lists, collaborate with teams, and manage items efficiently.{% endblock %}
+
+{% block meta_keywords %}inventory management, list management, item tracking, organization, team collaboration, free inventory tool{% endblock %}
+
+{% block og_title %}ThingList - Inventory Management Made Easy{% endblock %}
+
+{% block og_description %}The easiest way to organize and manage your inventory with ThingList. Create lists, track items, and collaborate with your team.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero {
+        text-align: center;
+        color: #333;
+        margin: 3rem 0;
+    }
+
+    .hero h1 {
+        font-size: 2.8rem;
+        margin-bottom: 1rem;
+        color: #1f2937;
+        font-weight: 700;
+    }
+
+    .hero p {
+        font-size: 1.2rem;
+        margin-bottom: 2.5rem;
+        color: #666;
+        line-height: 1.6;
+    }
+
+    .cta-buttons {
+        display: flex;
+        gap: 1.5rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 0.875rem 2.5rem;
+        font-size: 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .btn-primary {
+        background: #2563eb;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-secondary {
+        background: transparent;
+        color: #2563eb;
+        border: 2px solid #2563eb;
+    }
+
+    .btn-secondary:hover {
+        background: #2563eb;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 3rem;
+    }
+
+    .feature {
+        padding: 2rem;
+        text-align: center;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        border-top: 3px solid #2563eb;
+        transition: all 0.3s ease;
+    }
+
+    .feature:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-4px);
+    }
+
+    .feature h3 {
+        color: #2563eb;
+        margin-bottom: 0.75rem;
+        font-size: 1.25rem;
+    }
+
+    .feature p {
+        color: #666;
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Welcome to ThingList</h1>
+    <p>Organize your tasks and keep track of everything that matters</p>
+
+    {% if not current_user.is_authenticated %}
+    <div class="cta-buttons">
+        <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
+        <a href="{{ url_for('login') }}" class="btn btn-secondary">Sign In</a>
+    </div>
+    {% else %}
+    <div class="cta-buttons">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+    </div>
+    {% endif %}
+
+    <div class="features">
+        <div class="feature">
+            <h3>🔐 Secure</h3>
+            <p>Your data is encrypted and secure with industry-standard security</p>
+        </div>
+        <div class="feature">
+            <h3>⚡ Fast</h3>
+            <p>Lightning-fast performance to keep up with your productivity</p>
+        </div>
+        <div class="feature">
+            <h3>📱 Responsive</h3>
+            <p>Works seamlessly on desktop, tablet, and mobile devices</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
