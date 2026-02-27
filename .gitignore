@@ -20,6 +20,10 @@ wheels/
 .installed.cfg
 *.egg
 
+docs/
+admin/
+migration/
+
 # Virtual Environment
 venv/
 ENV/

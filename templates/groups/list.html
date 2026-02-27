@@ -18,20 +18,21 @@
 
 {% block content %}
 <div class="modern-animate-in">
+    {% if not owned_groups and not member_groups %}
     <!-- Page Header -->
     <div class="page-header">
         <div class="page-title-section">
-            <h1 class="page-title">
-                <i class="fas fa-users"></i>
-                Groups
-            </h1>
-            <p class="page-subtitle">Collaborate with others and manage shared lists</p>
+            <h4 class="page-title">
+                Collaborate with others and manage shared lists
+            </h4>
+            
         </div>
         <a href="{{ url_for('create_group') }}" class="modern-btn modern-btn-primary">
             <i class="fas fa-plus"></i>
             Create Group
         </a>
     </div>
+    {% endif %}
 
     {% if owned_groups or member_groups %}
     <!-- Statistics Bar -->
@@ -138,10 +139,6 @@
         <i class="fas fa-users"></i>
         <h2 class="empty-title">No groups yet</h2>
         <p class="empty-description">Create your first group to start collaborating with others</p>
-        <a href="{{ url_for('create_group') }}" class="modern-btn modern-btn-primary">
-            <i class="fas fa-plus"></i>
-            Create Your First Group
-        </a>
     </div>
     {% endif %}
 </div>

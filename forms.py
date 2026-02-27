@@ -15,7 +15,28 @@ class RegistrationForm(FlaskForm):
             Regexp('^[A-Za-z0-9_]+$', message='Username must contain only letters, numbers, and underscores')
         ]
     )
-    # ...existing code...
+    email = StringField(
+        'Email',
+        validators=[
+            DataRequired(message='Email is required'),
+            Email(message='Invalid email address')
+        ]
+    )
+    password = PasswordField(
+        'Password',
+        validators=[
+            DataRequired(message='Password is required'),
+            Length(min=8, message='Password must be at least 8 characters long')
+        ]
+    )
+    password_confirm = PasswordField(
+        'Confirm Password',
+        validators=[
+            DataRequired(message='Please confirm your password'),
+            EqualTo('password', message='Passwords must match')
+        ]
+    )
+    submit = SubmitField('Create Account')
 
     def validate_username(self, field):
         """Check if username is reserved or already exists"""
