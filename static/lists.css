@@ -39,14 +39,14 @@
 
 .stats-bar {
     display: flex;
-    gap: 1.25rem;
-    margin-bottom: 1rem;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
     flex-wrap: wrap;
 }
 
 .stat-box {
     background: white;
-    padding: 1rem 1.5rem;
+    padding: 1.5rem;
     border-radius: var(--radius-lg);
     border: 1px solid var(--gray-200);
     box-shadow: var(--shadow-sm);
@@ -83,18 +83,19 @@
     border-radius: var(--radius-lg);
     border: 1px solid var(--gray-200);
     box-shadow: var(--shadow-sm);
-    overflow: hidden;
+    overflow: visible;
     margin-bottom: 3rem;
 }
 
 .lists-table {
     width: 100%;
     border-collapse: collapse;
+    display: block;
 }
 
 .lists-table thead {
     background: var(--gray-50);
-    border-bottom: 2px solid var(--gray-200);
+    border-bottom: 1px solid var(--gray-200);
 }
 
 .lists-table th {
@@ -221,9 +222,11 @@
 .empty-state {
     background: white;
     padding: 4rem 2rem;
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
     text-align: center;
-    border: 2px dashed var(--gray-300);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 3rem;
 }
 
 .empty-icon {
@@ -253,27 +256,50 @@
         flex-direction: column;
     }
 
+    .lists-table-container {
+        padding: 1rem;
+        background: var(--gray-50);
+    }
+
+    .lists-table {
+        display: block;
+    }
+
     .lists-table thead {
         display: none;
     }
 
+    .lists-table tbody {
+        display: block;
+        background: white;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        box-shadow: var(--shadow-sm);
+    }
+
     .lists-table tbody tr {
         display: block;
-        margin-bottom: 1rem;
-        border: 1px solid var(--gray-200);
-        border-radius: var(--radius-md);
-        overflow: hidden;
+        border-bottom: 1px solid var(--gray-100);
+        padding: 1rem;
+    }
+
+    .lists-table tbody tr:last-child {
+        border-bottom: none;
     }
 
     .lists-table td {
         display: block;
         text-align: left;
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid var(--gray-100);
+        padding: 0.5rem 0;
+        border: none;
+    }
+
+    .lists-table td:first-child {
+        padding-top: 0;
     }
 
     .lists-table td:last-child {
-        border-bottom: none;
+        padding-bottom: 0;
     }
 
     .lists-table td::before {
@@ -284,7 +310,7 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
         display: block;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.375rem;
     }
 
     .list-description-cell {
@@ -298,6 +324,7 @@
 
     .list-actions-cell {
         flex-direction: column;
+        gap: 0.75rem;
     }
 
     .table-action-btn {

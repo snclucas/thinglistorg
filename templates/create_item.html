@@ -54,8 +54,11 @@
             {% if list.is_field_visible('location') %}
             <div class="form-group">
                 <label for="location">Location</label>
-                <input type="text" id="location" name="location" placeholder="e.g., Kitchen Cabinet">
-                <div class="help-text">Where is this item stored?</div>
+                <div class="autocomplete-container">
+                    <input type="text" id="location" name="location" placeholder="e.g., Kitchen Cabinet" autocomplete="off">
+                    <div class="autocomplete-list" id="locationList"></div>
+                </div>
+                <div class="help-text">Where is this item stored? (autocomplete available)</div>
             </div>
             {% endif %}
         </div>
@@ -246,5 +249,89 @@
             itemTypeList.classList.remove('active');
         }
     });
+
+    // Location Autocomplete
+    const locationInput = document.getElementById('location');
+    const locationList = document.getElementById('locationList');
+    let locationSelectedIndex = -1;
+
+    if (locationInput) {
+        locationInput.addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            locationSelectedIndex = -1;
+
+            if (query.length < 1) {
+                locationList.classList.remove('active');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/locations/autocomplete?q=${encodeURIComponent(query)}`);
+                const locations = await response.json();
+
+                if (locations.length === 0) {
+                    locationList.classList.remove('active');
+                    return;
+                }
+
+                locationList.innerHTML = locations.map((location, idx) =>
+                    `<div class="autocomplete-item" data-value="${location.name}" data-index="${idx}">${location.name}</div>`
+                ).join('');
+
+                locationList.classList.add('active');
+
+                // Add click handlers
+                document.querySelectorAll('#locationList .autocomplete-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        locationInput.value = item.dataset.value;
+                        locationList.classList.remove('active');
+                    });
+                });
+            } catch (error) {
+                console.error('Location autocomplete error:', error);
+            }
+        });
+
+        // Keyboard navigation for location
+        locationInput.addEventListener('keydown', (e) => {
+            const items = document.querySelectorAll('#locationList .autocomplete-item');
+            if (items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                locationSelectedIndex = Math.min(locationSelectedIndex + 1, items.length - 1);
+                updateLocationSelection(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                locationSelectedIndex = Math.max(locationSelectedIndex - 1, -1);
+                if (locationSelectedIndex === -1) locationInput.focus();
+                updateLocationSelection(items);
+            } else if (e.key === 'Enter' && locationSelectedIndex >= 0) {
+                e.preventDefault();
+                locationInput.value = items[locationSelectedIndex].dataset.value;
+                locationList.classList.remove('active');
+            } else if (e.key === 'Escape') {
+                locationList.classList.remove('active');
+            }
+        });
+
+        function updateLocationSelection(items) {
+            items.forEach((item, idx) => {
+                if (idx === locationSelectedIndex) {
+                    item.classList.add('selected');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        // Close location autocomplete when clicking outside
+        document.addEventListener('click', (e) => {
+            if (e.target !== locationInput) {
+                locationList.classList.remove('active');
+            }
+        });
+    }
 </script>
 {% endblock %}

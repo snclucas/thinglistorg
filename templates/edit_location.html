@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Storage Location - ThingList{% endblock %}
+
+{% block meta_description %}Edit your storage location{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2>Edit Location</h2>
+        <p>Update your storage location information.</p>
+    </div>
+
+    <form method="POST" novalidate class="form-card">
+        {{ form.hidden_tag() }}
+
+        <div class="form-info">
+            <div class="info-item">
+                <span class="info-label">Items Stored Here:</span>
+                <span class="info-value">{{ item_count }}</span>
+            </div>
+        </div>
+
+        <div class="form-group {% if form.name.errors %}error{% endif %}">
+            {{ form.name.label }}
+            {{ form.name(placeholder="e.g., Bedroom, Garage, Attic, Storage Room", class="form-control") }}
+            {% if form.name.errors %}
+            <div class="form-errors">
+                {% for error in form.name.errors %}
+                <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-actions">
+            {{ form.submit(value="Update Location", class="modern-btn modern-btn-primary") }}
+            <a href="{{ url_for('list_locations') }}" class="modern-btn modern-btn-secondary">Cancel</a>
+        </div>
+    </form>
+
+    <div class="danger-zone">
+        <h3>Danger Zone</h3>
+        <p>Delete this storage location. All items stored in this location will have their location removed.</p>
+        <button class="modern-btn modern-btn-danger" onclick="showDeleteConfirmation({{ location.id }})">
+            <i class="fas fa-trash"></i> Delete Location
+        </button>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Delete Location</h3>
+                <button type="button" class="modal-close" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the location <strong>{{ location.name }}</strong>?</p>
+                <p>This action will remove the location assignment from <strong>{{ item_count }} item(s)</strong>, but the items themselves will not be deleted.</p>
+                <p class="warning-text"><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modern-btn modern-btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <form method="POST" action="{{ url_for('delete_location', location_id=location.id) }}" style="display: inline;">
+                    <button type="submit" class="modern-btn modern-btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.form-header h2 {
+    margin-bottom: 0.5rem;
+}
+
+.form-header p {
+    color: var(--gray-600);
+    font-size: 0.95rem;
+}
+
+.form-card {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.form-info {
+    border-left: 4px solid var(--primary-500);
+    padding: 1rem;
+    background: var(--primary-50);
+    border-radius: 0.375rem;
+    margin-bottom: 1.5rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.info-label {
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.info-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary-600);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    font-size: 0.9rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px var(--primary-100);
+}
+
+.form-errors {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    border-radius: 0.375rem;
+    color: var(--danger);
+    font-size: 0.875rem;
+}
+
+.form-errors div {
+    margin: 0.25rem 0;
+}
+
+.form-group.error .form-control {
+    border-color: var(--danger);
+    background-color: #fff5f5;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.danger-zone {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+}
+
+.danger-zone h3 {
+    color: var(--danger);
+    margin-bottom: 0.5rem;
+}
+
+.danger-zone p {
+    color: var(--gray-700);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.warning-text {
+    color: var(--danger);
+    font-weight: 500 !important;
+}
+
+.modern-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.modern-btn-primary {
+    background: var(--primary-600);
+    color: white;
+}
+
+.modern-btn-primary:hover {
+    background: var(--primary-700);
+}
+
+.modern-btn-secondary {
+    background: var(--gray-200);
+    color: var(--gray-700);
+}
+
+.modern-btn-secondary:hover {
+    background: var(--gray-300);
+}
+
+.modern-btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.modern-btn-danger:hover {
+    background: #dc2626;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 0;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--gray-200);
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--gray-500);
+    padding: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    color: var(--gray-700);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-body p {
+    margin-bottom: 1rem;
+    color: var(--gray-700);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--gray-200);
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+    .form-card {
+        padding: 1.5rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .modern-btn {
+        width: 100%;
+    }
+
+    .danger-zone {
+        margin-top: 1.5rem;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+    }
+
+    .modal-footer .modern-btn {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+function showDeleteConfirmation(locationId) {
+    document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    var modal = document.getElementById('deleteModal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

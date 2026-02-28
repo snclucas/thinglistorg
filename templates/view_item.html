@@ -156,7 +156,7 @@
                         </div>
                     {% endif %}
                     {% if (list.is_field_visible('item_type') and item.item_type)
-                          or (list.is_field_visible('location') and item.location)
+                          or (list.is_field_visible('location') and (item.location_obj or item.location))
                           or (list.is_field_visible('quantity') and item.quantity is not none)
                           or (list.is_field_visible('barcode') and item.barcode)
                           or item.created_at
@@ -168,10 +168,10 @@
                                     <span class="item-side-value">{{ item.item_type.name }}</span>
                                 </div>
                             {% endif %}
-                            {% if list.is_field_visible('location') and item.location %}
+                            {% if list.is_field_visible('location') and (item.location_obj or item.location) %}
                                 <div class="item-side-detail">
                                     <span class="item-side-label">Location</span>
-                                    <span class="item-side-value">{{ item.location }}</span>
+                                    <span class="item-side-value">{{ item.location_obj.name if item.location_obj else item.location }}</span>
                                 </div>
                             {% endif %}
                             {% if list.is_field_visible('quantity') and item.quantity is not none %}

@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}My Item Types - ThingList{% endblock %}
+
+{% block meta_description %}Manage custom item types for your inventory{% endblock %}
+
+{% block content %}
+<div class="item-types-container">
+    <div class="item-types-header">
+        <h2>Item Types</h2>
+        <a href="{{ url_for('create_item_type') }}" class="modern-btn modern-btn-primary">
+            <i class="fas fa-plus"></i> New Item Type
+        </a>
+    </div>
+
+    {% if item_types %}
+    <div class="item-types-list">
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Items Using This Type</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item_type in item_types %}
+                <tr>
+                    <td>{{ item_type.name }}</td>
+                    <td>
+                        <span class="badge">{{ type_counts.get(item_type.id, 0) }}</span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{{ url_for('edit_item_type', item_type_id=item_type.id) }}" class="btn-icon btn-edit" title="Edit">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <form method="POST" action="{{ url_for('delete_item_type', item_type_id=item_type.id) }}" class="delete-form">
+                                <button type="submit" class="btn-icon btn-delete" title="Delete" onclick="return confirm('Are you sure? Items will no longer have this item type assigned.');">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <p>You haven't created any item types yet.</p>
+        <a href="{{ url_for('create_item_type') }}" class="modern-btn modern-btn-primary">Create Your First Item Type</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.item-types-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.item-types-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.item-types-header h2 {
+    margin: 0;
+}
+
+.item-types-list {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.items-table thead {
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.items-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--gray-700);
+    font-size: 0.9rem;
+}
+
+.items-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--gray-200);
+    color: var(--gray-700);
+}
+
+.items-table tbody tr:hover {
+    background: var(--gray-50);
+}
+
+.badge {
+    display: inline-block;
+    background: var(--primary-100);
+    color: var(--primary-700);
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn-edit {
+    background: var(--primary-100);
+    color: var(--primary-600);
+}
+
+.btn-edit:hover {
+    background: var(--primary-200);
+    color: var(--primary-700);
+}
+
+.btn-delete {
+    background: #fee2e2;
+    color: var(--danger);
+}
+
+.btn-delete:hover {
+    background: #fecaca;
+}
+
+.delete-form {
+    display: inline;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--gray-500);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+    .item-types-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .item-types-header a {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .items-table th,
+    .items-table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .btn-icon {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}

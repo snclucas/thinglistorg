@@ -224,9 +224,50 @@ class ListShare(db.Model):
         return self.permission == 'edit'
 
 
+class InvitationToken(db.Model):
+    """Invitation token model for controlled user registration"""
+    __tablename__ = 'invitation_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    max_uses = db.Column(db.Integer, default=1, nullable=False)
+    times_used = db.Column(db.Integer, default=0, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+    def __repr__(self):
+        return f'<InvitationToken {self.token[:8]}...>'
+
+    def is_valid(self):
+        """Check if token is still valid"""
+        if not self.is_active:
+            return False
+        if self.expires_at < datetime.utcnow():
+            return False
+        if self.max_uses > 0 and self.times_used >= self.max_uses:
+            return False
+        return True
+
+    def use(self):
+        """Mark token as used"""
+        if self.is_valid():
+            self.times_used += 1
+            return True
+        return False
+
+    def remaining_uses(self):
+        """Get remaining uses (-1 means unlimited)"""
+        if self.max_uses <= 0:
+            return -1
+        return max(0, self.max_uses - self.times_used)
+
+
 class Group(db.Model):
     """Group model for collaborative list management"""
     __tablename__ = 'groups'
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
@@ -545,6 +586,68 @@ class ItemType(db.Model):
         return new_type
 
 
+class Location(db.Model):
+    """Location model for predefined and custom storage locations"""
+    __tablename__ = 'locations'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False, index=True)
+    is_system = db.Column(db.Boolean, default=False)  # System locations vs user-created
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)  # Null for system locations
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Location {self.name}>'
+
+    def to_dict(self):
+        """Convert to dictionary"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'is_system': self.is_system
+        }
+
+    @staticmethod
+    def get_available_locations(user_id):
+        """Get all available locations for a user (system + user-created)"""
+        system_locations = Location.query.filter_by(is_system=True, user_id=None).order_by(Location.name).all()
+        user_locations = Location.query.filter_by(user_id=user_id, is_system=False).order_by(Location.name).all()
+        return system_locations + user_locations
+
+    @staticmethod
+    def get_or_create(location_name, user_id):
+        """Get existing location or create a new one for the user"""
+        if not location_name or not location_name.strip():
+            return None
+
+        location_name = location_name.strip()
+        location_name_lc = location_name.lower()
+
+        # Check if system location exists (case-insensitive)
+        system_location = Location.query.filter(
+            Location.is_system == True,
+            Location.user_id == None,
+            func.lower(Location.name) == location_name_lc
+        ).first()
+        if system_location:
+            return system_location
+
+        # Check if user has created this location (case-insensitive)
+        user_location = Location.query.filter(
+            Location.user_id == user_id,
+            Location.is_system == False,
+            func.lower(Location.name) == location_name_lc
+        ).first()
+        if user_location:
+            return user_location
+
+        # Create new user location
+        new_location = Location(name=location_name, user_id=user_id, is_system=False)
+        db.session.add(new_location)
+        db.session.flush()  # Flush to get the ID without committing
+        return new_location
+
+
 class List(db.Model):
     """List model for inventory lists"""
     __tablename__ = 'lists'
@@ -798,7 +901,7 @@ class Item(db.Model):
     description = db.Column(db.Text)
     notes = db.Column(db.Text)
     tags = db.Column(db.String(500))  # Comma-separated tags
-    location = db.Column(db.String(150))  # Where the item is located
+    location = db.Column(db.String(150))  # Legacy string location (backward compatibility)
     quantity = db.Column(db.Integer, default=1)
     low_stock_threshold = db.Column(db.Integer, default=0)
     barcode = db.Column(db.String(128))
@@ -808,9 +911,12 @@ class Item(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     list_id = db.Column(db.Integer, db.ForeignKey('lists.id'), nullable=False, index=True)
     item_type_id = db.Column(db.Integer, db.ForeignKey('item_types.id'), index=True)
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), index=True)
 
     # Relationship to ItemType
     item_type = db.relationship('ItemType', backref='items')
+    # Relationship to Location
+    location_obj = db.relationship('Location', backref='items')
     # Relationship to tags
     tags_rel = db.relationship('Tag', secondary=item_tags, lazy='subquery', backref=db.backref('items', lazy=True))
     # Relationship to attachments

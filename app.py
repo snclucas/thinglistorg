@@ -1,12 +1,12 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, send_from_directory, Response
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, send_from_directory, Response, current_app
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 from sqlalchemy import inspect, text, event
 from sqlalchemy.orm import attributes
-from models import db, User, List, Item, ItemType, Tag, ItemAttachment, AuditLog, item_tags, ListCustomField, ItemCustomField, ListShare, Notification, ItemImage, Group, GroupMember
-from forms import RegistrationForm, LoginForm, CreateGroupForm, EditGroupForm, AddGroupMemberForm, EditGroupMemberForm, ForgotPasswordForm, ResetPasswordForm, PasswordChangeForm
+from models import db, User, List, Item, ItemType, Tag, ItemAttachment, AuditLog, item_tags, ListCustomField, ItemCustomField, ListShare, Notification, ItemImage, Group, GroupMember, Location
+from forms import RegistrationForm, LoginForm, CreateGroupForm, EditGroupForm, AddGroupMemberForm, EditGroupMemberForm, ForgotPasswordForm, ResetPasswordForm, PasswordChangeForm, ItemTypeForm, LocationForm
 from config import config
 from flask_wtf.csrf import CSRFError, CSRFProtect
 import os
@@ -397,13 +397,70 @@ def sitemap():
 @app.route('/register', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
 def register():
-    """User registration"""
+    """User registration - with optional invitation token"""
+    from models import InvitationToken
+    
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
 
+    # Check invitation token from query string
+    invitation_token = request.args.get('token') or request.form.get('invitation_token')
+    valid_invitation = None
+    
+    if invitation_token:
+        # Validate invitation token
+        valid_invitation = InvitationToken.query.filter_by(token=invitation_token).first()
+        if not valid_invitation or not valid_invitation.is_valid():
+            flash('Invalid or expired invitation token.', 'error')
+            return redirect(url_for('login'))
+    else:
+        # Check if registrations are enabled
+        if not current_app.config.get('REGISTRATIONS_ENABLED'):
+            flash('Registration is currently disabled. Please use an invitation link or contact an administrator for access.', 'error')
+            return redirect(url_for('login'))
+
     form = RegistrationForm()
+    
+    # Set invitation token in hidden field if provided
+    if invitation_token and request.method == 'GET':
+        form.invitation_token.data = invitation_token
+    
+    # Validate reCAPTCHA if enabled (before form validation)
+    if request.method == 'POST' and current_app.config.get('RECAPTCHA_ENABLED'):
+        recaptcha_response = request.form.get('g-recaptcha-response')
+        if not recaptcha_response:
+            flash('Please complete the reCAPTCHA verification.', 'error')
+            return render_template('register.html', form=form, invitation_token=invitation_token)
+        
+        # Verify with Google
+        try:
+            import requests
+            verify_url = 'https://www.google.com/recaptcha/api/siteverify'
+            verification_data = {
+                'secret': current_app.config['RECAPTCHA_PRIVATE_KEY'],
+                'response': recaptcha_response
+            }
+            recaptcha_result = requests.post(verify_url, data=verification_data, timeout=5)
+            recaptcha_json = recaptcha_result.json()
+            
+            if not recaptcha_json.get('success'):
+                flash('reCAPTCHA verification failed. Please try again.', 'error')
+                return render_template('register.html', form=form, invitation_token=invitation_token)
+        except Exception as e:
+            app.logger.error(f'reCAPTCHA verification error: {str(e)}')
+            flash('An error occurred during reCAPTCHA verification. Please try again.', 'error')
+            return render_template('register.html', form=form, invitation_token=invitation_token)
+    
     if form.validate_on_submit():
         try:
+            # Re-validate invitation token on submit
+            post_invitation = form.invitation_token.data
+            if post_invitation:
+                valid_invitation = InvitationToken.query.filter_by(token=post_invitation).first()
+                if not valid_invitation or not valid_invitation.is_valid():
+                    flash('Invalid or expired invitation token.', 'error')
+                    return render_template('register.html', form=form, invitation_token=post_invitation)
+            
             from email_utils import generate_token, send_verification_email
 
             user = User(
@@ -419,6 +476,11 @@ def register():
             db.session.add(user)
             db.session.commit()
 
+            # Mark invitation token as used
+            if valid_invitation:
+                valid_invitation.use()
+                db.session.commit()
+
             # Send verification email
             base_url = request.host_url.rstrip('/')
             send_verification_email(user, verification_token, base_url)
@@ -430,7 +492,7 @@ def register():
             flash('An error occurred during registration. Please try again.', 'error')
             app.logger.error(f'Registration error: {str(e)}')
 
-    return render_template('register.html', form=form)
+    return render_template('register.html', form=form, invitation_token=invitation_token)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -1330,6 +1392,241 @@ def remove_group_member(group_id, user_id):
     return redirect(url_for('view_group', group_id=group_id))
 
 
+# Item Type Management Routes
+@app.route('/item-types', methods=['GET'])
+@login_required
+def list_item_types():
+    """List all item types for the current user"""
+    # Get user's custom item types
+    item_types = ItemType.query.filter_by(user_id=current_user.id, is_system=False).order_by(ItemType.name).all()
+    
+    # Count items using each type
+    type_counts = {}
+    for item_type in item_types:
+        type_counts[item_type.id] = Item.query.filter_by(item_type_id=item_type.id).count()
+    
+    return render_template('item_types.html', item_types=item_types, type_counts=type_counts)
+
+
+@app.route('/item-types/create', methods=['GET', 'POST'])
+@login_required
+def create_item_type():
+    """Create a new item type"""
+    from forms import ItemTypeForm
+    
+    form = ItemTypeForm()
+    if form.validate_on_submit():
+        try:
+            item_type = ItemType(
+                name=form.name.data,
+                is_system=False,
+                user_id=current_user.id
+            )
+            db.session.add(item_type)
+            db.session.commit()
+            flash(f'Item type "{item_type.name}" created successfully.', 'success')
+            return redirect(url_for('list_item_types'))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while creating the item type.', 'error')
+            app.logger.error(f'Error creating item type: {str(e)}')
+    
+    return render_template('create_item_type.html', form=form)
+
+
+@app.route('/item-types/<int:item_type_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_item_type(item_type_id):
+    """Edit an item type"""
+    from forms import ItemTypeForm
+    
+    item_type = ItemType.query.get_or_404(item_type_id)
+    
+    # Check if user owns this item type
+    if item_type.user_id != current_user.id:
+        flash('You do not have permission to edit this item type.', 'error')
+        return redirect(url_for('list_item_types'))
+    
+    form = ItemTypeForm()
+    if form.validate_on_submit():
+        try:
+            # Check for unique name among user's types
+            existing = ItemType.query.filter(
+                ItemType.name == form.name.data,
+                ItemType.user_id == current_user.id,
+                ItemType.id != item_type_id,
+                ItemType.is_system == False
+            ).first()
+            
+            if existing:
+                flash('An item type with this name already exists.', 'error')
+                return render_template('edit_item_type.html', form=form, item_type=item_type)
+            
+            item_type.name = form.name.data
+            db.session.commit()
+            flash(f'Item type "{item_type.name}" updated successfully.', 'success')
+            return redirect(url_for('list_item_types'))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while updating the item type.', 'error')
+            app.logger.error(f'Error updating item type: {str(e)}')
+    
+    if request.method == 'GET':
+        form.name.data = item_type.name
+    
+    # Count items using this type
+    item_count = Item.query.filter_by(item_type_id=item_type_id).count()
+    
+    return render_template('edit_item_type.html', form=form, item_type=item_type, item_count=item_count)
+
+
+@app.route('/item-types/<int:item_type_id>/delete', methods=['POST'])
+@login_required
+def delete_item_type(item_type_id):
+    """Delete an item type (sets items to NULL item_type_id)"""
+    item_type = ItemType.query.get_or_404(item_type_id)
+    
+    # Check if user owns this item type
+    if item_type.user_id != current_user.id:
+        flash('You do not have permission to delete this item type.', 'error')
+        return redirect(url_for('list_item_types'))
+    
+    try:
+        type_name = item_type.name
+        
+        # Set item_type_id to NULL for all items using this type
+        Item.query.filter_by(item_type_id=item_type_id).update({Item.item_type_id: None})
+        
+        # Delete the item type
+        db.session.delete(item_type)
+        db.session.commit()
+        
+        flash(f'Item type "{type_name}" deleted successfully. Items are no longer assigned to this type.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while deleting the item type.', 'error')
+        app.logger.error(f'Error deleting item type: {str(e)}')
+    
+    return redirect(url_for('list_item_types'))
+
+
+@app.route('/locations', methods=['GET'])
+@login_required
+def list_locations():
+    """List all locations for the current user"""
+    # Get user's custom locations
+    locations = Location.query.filter_by(user_id=current_user.id, is_system=False).order_by(Location.name).all()
+    
+    # Count items using each location
+    location_counts = {}
+    for location in locations:
+        location_counts[location.id] = Item.query.filter_by(location_id=location.id).count()
+    
+    return render_template('locations.html', locations=locations, location_counts=location_counts)
+
+
+@app.route('/locations/create', methods=['GET', 'POST'])
+@login_required
+def create_location():
+    """Create a new location"""
+    from forms import LocationForm
+    
+    form = LocationForm()
+    if form.validate_on_submit():
+        try:
+            location = Location(
+                name=form.name.data,
+                is_system=False,
+                user_id=current_user.id
+            )
+            db.session.add(location)
+            db.session.commit()
+            flash(f'Location "{location.name}" created successfully.', 'success')
+            return redirect(url_for('list_locations'))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while creating the location.', 'error')
+            app.logger.error(f'Error creating location: {str(e)}')
+    
+    return render_template('create_location.html', form=form)
+
+
+@app.route('/locations/<int:location_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_location(location_id):
+    """Edit a location"""
+    from forms import LocationForm
+    
+    location = Location.query.get_or_404(location_id)
+    
+    # Check if user owns this location
+    if location.user_id != current_user.id:
+        flash('You do not have permission to edit this location.', 'error')
+        return redirect(url_for('list_locations'))
+    
+    form = LocationForm()
+    if form.validate_on_submit():
+        try:
+            # Check for unique name among user's locations
+            existing = Location.query.filter(
+                Location.name == form.name.data,
+                Location.user_id == current_user.id,
+                Location.id != location_id,
+                Location.is_system == False
+            ).first()
+            
+            if existing:
+                flash('A location with this name already exists.', 'error')
+                return render_template('edit_location.html', form=form, location=location)
+            
+            location.name = form.name.data
+            db.session.commit()
+            flash(f'Location "{location.name}" updated successfully.', 'success')
+            return redirect(url_for('list_locations'))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while updating the location.', 'error')
+            app.logger.error(f'Error updating location: {str(e)}')
+    
+    if request.method == 'GET':
+        form.name.data = location.name
+    
+    # Count items using this location
+    item_count = Item.query.filter_by(location_id=location_id).count()
+    
+    return render_template('edit_location.html', form=form, location=location, item_count=item_count)
+
+
+@app.route('/locations/<int:location_id>/delete', methods=['POST'])
+@login_required
+def delete_location(location_id):
+    """Delete a location (sets items to NULL location_id)"""
+    location = Location.query.get_or_404(location_id)
+    
+    # Check if user owns this location
+    if location.user_id != current_user.id:
+        flash('You do not have permission to delete this location.', 'error')
+        return redirect(url_for('list_locations'))
+    
+    try:
+        location_name = location.name
+        
+        # Set location_id to NULL for all items using this location
+        Item.query.filter_by(location_id=location_id).update({Item.location_id: None})
+        
+        # Delete the location
+        db.session.delete(location)
+        db.session.commit()
+        
+        flash(f'Location "{location_name}" deleted successfully. Items are no longer assigned to this location.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while deleting the location.', 'error')
+        app.logger.error(f'Error deleting location: {str(e)}')
+    
+    return redirect(url_for('list_locations'))
+
+
 @app.route('/notifications', methods=['GET'])
 @login_required
 def view_notifications():
@@ -1644,13 +1941,18 @@ def create_item(list_id):
             if item_type_name:
                 item_type = ItemType.get_or_create(item_type_name, current_user.id)
 
+            # Get or create location
+            location_obj = None
+            if location:
+                location_obj = Location.get_or_create(location, current_user.id)
+
             new_item = Item(
                 name=name,
                 description=description,
                 notes=notes,
                 tags=tags,
                 item_type=item_type,
-                location=location,
+                location_obj=location_obj,
                 quantity=quantity,
                 url=url,
                 barcode=barcode,
@@ -1757,7 +2059,7 @@ def edit_item(item_id):
             item.notes = request.form.get('notes', '').strip()
             item.tags = request.form.get('tags', '').strip()
             item_type_name = request.form.get('item_type', '').strip()
-            item.location = request.form.get('location', '').strip()
+            location_name = request.form.get('location', '').strip()
             item.url = request.form.get('url', '').strip()
             item.barcode = request.form.get('barcode', '').strip()
 
@@ -1787,6 +2089,12 @@ def edit_item(item_id):
                 item.item_type = ItemType.get_or_create(item_type_name, current_user.id)
             else:
                 item.item_type = None
+
+            # Get or create location
+            if location_name:
+                item.location_obj = Location.get_or_create(location_name, current_user.id)
+            else:
+                item.location_obj = None
 
             if not item.name:
                 flash('Item name is required.', 'error')
@@ -2250,72 +2558,6 @@ def image_content(filename):
     return send_from_directory(app.config['IMAGE_STORAGE_DIR'], filename)
 
 
-@app.route('/item-types')
-@login_required
-def item_types():
-    system_types = ItemType.query.filter_by(is_system=True, user_id=None).order_by(ItemType.name).all()
-    user_types = ItemType.query.filter_by(is_system=False, user_id=current_user.id).order_by(ItemType.name).all()
-    return render_template('item_types.html', system_types=system_types, user_types=user_types)
-
-
-@app.route('/item-types/<int:type_id>/rename', methods=['POST'])
-@login_required
-def rename_item_type(type_id):
-    item_type = ItemType.query.get_or_404(type_id)
-    if item_type.is_system or item_type.user_id != current_user.id:
-        flash('Cannot rename this type.', 'error')
-        return redirect(url_for('item_types'))
-    new_name = request.form.get('name', '').strip()
-    if not new_name:
-        flash('Name is required.', 'error')
-        return redirect(url_for('item_types'))
-    item_type.name = new_name
-    db.session.commit()
-    _log_action('rename', 'item_type', item_type.id, {'name': new_name})
-    flash('Item type renamed.', 'success')
-    return redirect(url_for('item_types'))
-
-
-@app.route('/item-types/merge', methods=['POST'])
-@login_required
-def merge_item_type():
-    source_id = request.form.get('source_id')
-    target_id = request.form.get('target_id')
-    if not (source_id and target_id and source_id.isdigit() and target_id.isdigit()):
-        flash('Invalid merge selection.', 'error')
-        return redirect(url_for('item_types'))
-    source = ItemType.query.get_or_404(int(source_id))
-    target = ItemType.query.get_or_404(int(target_id))
-    if source.is_system or source.user_id != current_user.id:
-        flash('Invalid source type.', 'error')
-        return redirect(url_for('item_types'))
-    if target.is_system is False and target.user_id != current_user.id:
-        flash('Invalid target type.', 'error')
-        return redirect(url_for('item_types'))
-
-    Item.query.filter_by(item_type_id=source.id).update({'item_type_id': target.id})
-    db.session.delete(source)
-    db.session.commit()
-    _log_action('merge', 'item_type', target.id, {'source': source.id})
-    flash('Item type merged.', 'success')
-    return redirect(url_for('item_types'))
-
-
-@app.route('/item-types/<int:type_id>/delete', methods=['POST'])
-@login_required
-def delete_item_type(type_id):
-    item_type = ItemType.query.get_or_404(type_id)
-    if item_type.is_system or item_type.user_id != current_user.id:
-        flash('Cannot delete this type.', 'error')
-        return redirect(url_for('item_types'))
-    Item.query.filter_by(item_type_id=item_type.id).update({'item_type_id': None})
-    db.session.delete(item_type)
-    db.session.commit()
-    _log_action('delete', 'item_type', item_type.id, {})
-    flash('Item type deleted.', 'success')
-    return redirect(url_for('item_types'))
-
-
 @app.route('/alerts')
 @login_required
 def alerts():
@@ -2358,6 +2600,33 @@ def autocomplete_item_types():
     ).all()
 
     results = [{'id': t.id, 'name': t.name} for t in system_types + user_types]
+    return jsonify(results)
+
+
+@app.route('/api/locations/autocomplete')
+@login_required
+def autocomplete_locations():
+    """API endpoint for location autocomplete"""
+    query = request.args.get('q', '').strip().lower()
+
+    if not query or len(query) < 1:
+        # Return all available locations if no query
+        available_locations = Location.get_available_locations(current_user.id)
+        return jsonify([{'id': l.id, 'name': l.name} for l in available_locations])
+
+    # Search for matching locations
+    system_locations = Location.query.filter(
+        Location.is_system == True,
+        Location.user_id == None,
+        Location.name.ilike(f'%{query}%')
+    ).all()
+
+    user_locations = Location.query.filter(
+        Location.user_id == current_user.id,
+        Location.name.ilike(f'%{query}%')
+    ).all()
+
+    results = [{'id': l.id, 'name': l.name} for l in system_locations + user_locations]
     return jsonify(results)
 
 

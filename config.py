@@ -18,10 +18,20 @@ class Config:
     WTF_CSRF_FIELD_NAME = 'csrf_token'  # Standard field name
 
     # Database
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'DATABASE_URL',
-        'mysql+pymysql://root:password@localhost/thinglistorg_db'
-    )
+    # Build DATABASE_URL from components or use provided DATABASE_URL
+    _db_host = os.environ.get('DB_HOST', 'localhost')
+    _db_user = os.environ.get('DB_USER', '')
+    _db_password = os.environ.get('DB_PASSWORD', '')
+    _db_name = os.environ.get('DB_NAME', 'thinglistorg_db')
+    _db_port = os.environ.get('DB_PORT', '3306')
+    
+    if os.environ.get('DATABASE_URL'):
+        # Use full DATABASE_URL if provided
+        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    else:
+        # Build from components
+        SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{_db_user}:{_db_password}@{_db_host}:{_db_port}/{_db_name}'
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_size': 10,
@@ -57,6 +67,14 @@ class Config:
     # Security: CORS and Content-Type
     JSON_SORT_KEYS = False
     JSON_COMPACT = True
+
+    # reCAPTCHA Configuration (v2 - Checkbox)
+    RECAPTCHA_ENABLED = os.environ.get('RECAPTCHA_ENABLED', 'false').lower() == 'true'
+    RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY', '')
+    RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY', '')
+
+    # Registration Configuration
+    REGISTRATIONS_ENABLED = os.environ.get('REGISTRATIONS_ENABLED', 'false').lower() == 'true'
 
 
 class DevelopmentConfig(Config):

@@ -1,7 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, TextAreaField, SelectField, BooleanField
+from flask_login import current_user
+from wtforms import StringField, PasswordField, SubmitField, TextAreaField, SelectField, BooleanField, HiddenField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, Regexp, Optional
-from models import User, Group
+from models import User, Group, InvitationToken, Location
 from reserved_usernames import is_username_reserved
 
 
@@ -36,6 +37,7 @@ class RegistrationForm(FlaskForm):
             EqualTo('password', message='Passwords must match')
         ]
     )
+    invitation_token = HiddenField('Invitation Token', validators=[Optional()])
     submit = SubmitField('Create Account')
 
     def validate_username(self, field):
@@ -245,3 +247,55 @@ class ResetPasswordForm(FlaskForm):
     )
     submit = SubmitField('Reset Password')
 
+
+class ItemTypeForm(FlaskForm):
+    """Form for creating and editing item types"""
+    name = StringField(
+        'Item Type Name',
+        validators=[
+            DataRequired(message='Item type name is required'),
+            Length(min=1, max=80, message='Item type name must be between 1 and 80 characters')
+        ]
+    )
+    submit = SubmitField('Save Item Type')
+
+    def validate_name(self, field):
+        """Check if item type name already exists for this user"""
+        from models import ItemType
+        
+        # Get the item type ID if editing (from session or context)
+        item_type_id = None
+        
+        # Check if name already exists for this user (excluding the current item type if editing)
+        existing = ItemType.query.filter(
+            ItemType.name == field.data,
+            ItemType.user_id == current_user.id,
+            ItemType.is_system == False
+        ).first()
+        
+        if existing:
+            raise ValidationError('An item type with this name already exists.')
+
+
+class LocationForm(FlaskForm):
+    """Form for creating and editing locations"""
+    name = StringField(
+        'Location Name',
+        validators=[
+            DataRequired(message='Location name is required'),
+            Length(min=1, max=150, message='Location name must be between 1 and 150 characters')
+        ]
+    )
+    submit = SubmitField('Save Location')
+
+    def validate_name(self, field):
+        """Check if location name already exists for this user"""
+        # Check if name already exists for this user (excluding the current location if editing)
+        existing = Location.query.filter(
+            Location.name == field.data,
+            Location.user_id == current_user.id,
+            Location.is_system == False
+        ).first()
+        
+        if existing:
+            raise ValidationError('A location with this name already exists.')

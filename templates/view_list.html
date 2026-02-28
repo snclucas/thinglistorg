@@ -99,6 +99,7 @@
                 </div>
             </div>
         </div>
+        <br>
 
     <!-- Items Section -->
     <div class="items-section-card">
@@ -113,7 +114,7 @@
 
         <!-- Pagination Controls -->
         {% if pages > 1 or total > 0 %}
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; padding: 1.5rem 1.5rem 0 1.5rem;">
             <div style="font-size: 0.95rem; color: #6b7280;">
                 Showing <strong>{{ (page - 1) * per_page + 1 }}</strong> to <strong>{{ [page * per_page, total] | min }}</strong> of <strong>{{ total }}</strong> items
             </div>
@@ -158,13 +159,13 @@
                 <tbody>
                     {% for item in items %}
                     <tr>
-                        <td class="item-name-cell">
+                        <td data-label="Name" class="item-name-cell">
                             <a href="{{ url_for('view_item', item_id=item.id) }}" class="item-name-link">
                                 {{ item.name }}
                             </a>
                         </td>
                         {% if list.is_field_visible('description') %}
-                        <td class="item-description-cell">
+                        <td data-label="Description" class="item-description-cell">
                             {% if item.description %}
                                 {{ item.description }}
                             {% else %}
@@ -173,7 +174,7 @@
                         </td>
                         {% endif %}
                         {% if list.is_field_visible('item_type') %}
-                        <td class="item-meta-cell">
+                        <td data-label="Type" class="item-meta-cell">
                             {% if item.item_type %}
                                 <span class="modern-badge modern-badge-primary">{{ item.item_type.name }}</span>
                             {% else %}
@@ -182,20 +183,20 @@
                         </td>
                         {% endif %}
                         {% if list.is_field_visible('location') %}
-                        <td class="item-meta-cell">
-                            {% if item.location %}
-                                <i class="fas fa-map-pin"></i> {{ item.location }}
+                        <td data-label="Location" class="item-meta-cell">
+                            {% if item.location_obj or item.location %}
+                                <i class="fas fa-map-pin"></i> {{ item.location_obj.name if item.location_obj else item.location }}
                             {% else %}
                                 <span style="color: var(--gray-400);">—</span>
                             {% endif %}
                         </td>
                         {% endif %}
                         {% if list.is_field_visible('quantity') %}
-                        <td>
+                        <td data-label="Quantity">
                             <span class="item-quantity-badge">{{ item.quantity }}</span>
                         </td>
                         {% endif %}
-                        <td>
+                        <td data-label="Actions">
                             <div class="item-actions-cell">
                                 {% if can_edit %}
                                     <a href="{{ url_for('edit_item', item_id=item.id) }}" class="item-action-btn item-btn-edit">Edit</a>

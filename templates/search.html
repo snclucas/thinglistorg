@@ -675,10 +675,10 @@
                                 </div>
                             {% endif %}
                         {% endif %}
-                        {% if item.location %}
+                        {% if item.location_obj or item.location %}
                         <div class="result-meta-item">
                             <i class="fas fa-map-marker-alt"></i>
-                            <span>{{ item.location }}</span>
+                            <span>{{ item.location_obj.name if item.location_obj else item.location }}</span>
                         </div>
                         {% endif %}
                         {% if item.quantity %}
