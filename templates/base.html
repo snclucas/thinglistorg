@@ -42,6 +42,8 @@
 
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap CSS for Offcanvas -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='modern-theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='mobile-responsive.css') }}">
     <style>
@@ -423,14 +425,6 @@
             }
         }
 
-        /* Backward compatibility - hide old alerts */
-        .alert {
-            display: none;
-        }
-                transform: translateY(0);
-            }
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
             .nav-container {
@@ -553,82 +547,12 @@
         {% block content %}{% endblock %}
 
         <!-- Footer with GDPR Links -->
-        <footer style="background: var(--gray-900); color: white; margin-top: auto; padding: 2rem; border-top: 1px solid var(--gray-800);">
+        <footer style="background: var(--gray-900); color: white; margin-top: auto; padding: 1rem; border-top: 1px solid var(--gray-800);">
             <div style="max-width: 1200px; margin: 0 auto;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
-                    <!-- Company Info -->
-                    <div>
-                        <h3 style="margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600;">ThingList</h3>
-                        <p style="color: var(--gray-400); font-size: 0.9rem; line-height: 1.6;">
-                            The ultimate inventory management system. Organize lists, track items, and collaborate with your team.
-                        </p>
-                    </div>
 
-                    <!-- Product Links -->
-                    <div>
-                        <h4 style="margin-bottom: 1rem; font-weight: 600;">Product</h4>
-                        <ul style="list-style: none; padding: 0;">
-                            <li style="margin-bottom: 0.5rem;">
-                                <a href="{{ url_for('dashboard') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Dashboard</a>
-                            </li>
-                            <li style="margin-bottom: 0.5rem;">
-                                <a href="{{ url_for('create_list') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Create List</a>
-                            </li>
-                            <li style="margin-bottom: 0.5rem;">
-                                <a href="{{ url_for('view_groups') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Groups</a>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- GDPR & Compliance -->
-                    <div>
-                        <h4 style="margin-bottom: 1rem; font-weight: 600;">GDPR & Privacy</h4>
-                        <ul style="list-style: none; padding: 0;">
-                            <li style="margin-bottom: 0.5rem;">
-                                <a href="{{ url_for('privacy_policy') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Privacy Policy</a>
-                            </li>
-                            <li style="margin-bottom: 0.5rem;">
-                                <a href="{{ url_for('terms_of_service') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Terms of Service</a>
-                            </li>
-                            <li style="margin-bottom: 0.5rem;">
-                                <a href="{{ url_for('data_processing') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Data Processing</a>
-                            </li>
-                            {% if current_user.is_authenticated %}
-                            <li style="margin-bottom: 0.5rem;">
-                                <a href="{{ url_for('export_data') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Export My Data</a>
-                            </li>
-                            {% endif %}
-                        </ul>
-                    </div>
-
-                    <!-- Account -->
-                    <div>
-                        <h4 style="margin-bottom: 1rem; font-weight: 600;">Account</h4>
-                        <ul style="list-style: none; padding: 0;">
-                            {% if current_user.is_authenticated %}
-                            <li style="margin-bottom: 0.5rem;">
-                                <a href="{{ url_for('profile') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">My Profile</a>
-                            </li>
-                            <li style="margin-bottom: 0.5rem;">
-                                <a href="{{ url_for('user_preferences') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Preferences</a>
-                            </li>
-                            <li style="margin-bottom: 0.5rem;">
-                                <a href="{{ url_for('delete_account') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Delete Account</a>
-                            </li>
-                            {% else %}
-                            <li style="margin-bottom: 0.5rem;">
-                                <a href="{{ url_for('login') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Login</a>
-                            </li>
-                            <li style="margin-bottom: 0.5rem;">
-                                <a href="{{ url_for('register') }}" style="color: var(--gray-400); text-decoration: none; transition: color 0.3s;">Register</a>
-                            </li>
-                            {% endif %}
-                        </ul>
-                    </div>
-                </div>
 
                 <!-- Copyright and GDPR Notice -->
-                <div style="border-top: 1px solid var(--gray-800); padding-top: 2rem; color: var(--gray-400); font-size: 0.85rem;">
+                <div style="border-top: 0px solid var(--gray-800); padding-top: 1rem; color: var(--gray-400); font-size: 0.85rem;">
                     <p style="margin-bottom: 0.5rem;">
                         © 2026 ThingList. All rights reserved. |
                         <a href="{{ url_for('privacy_policy') }}" style="color: var(--gray-400); text-decoration: none;">Privacy</a> |

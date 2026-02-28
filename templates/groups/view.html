@@ -41,10 +41,21 @@
         </div>
         {% if is_owner %}
         <div class="header-actions" style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+            <button type="button" class="modern-btn modern-btn-secondary modern-btn-sm" data-bs-toggle="offcanvas" data-bs-target="#groupHelpCanvas" aria-controls="groupHelpCanvas" title="Get help">
+                <i class="fas fa-circle-question"></i>
+                Help
+            </button>
             <a href="{{ url_for('edit_group', group_id=group.id) }}" class="modern-btn modern-btn-secondary modern-btn-sm">
                 <i class="fas fa-edit"></i>
                 Edit
             </a>
+        </div>
+        {% else %}
+        <div class="header-actions" style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+            <button type="button" class="modern-btn modern-btn-secondary modern-btn-sm" data-bs-toggle="offcanvas" data-bs-target="#groupHelpCanvas" aria-controls="groupHelpCanvas" title="Get help">
+                <i class="fas fa-circle-question"></i>
+                Help
+            </button>
         </div>
         {% endif %}
     </div>
@@ -722,6 +733,80 @@
         display: block !important;
     }
 
+    /* Offcanvas Help Panel Styling */
+    .offcanvas {
+        width: 400px !important;
+        background: white;
+        position: fixed;
+        top: 0;
+        right: 0;
+        height: 100vh;
+        z-index: 1050;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .offcanvas.show {
+        transform: translateX(0);
+    }
+
+    .offcanvas-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1040;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: none;
+    }
+
+    .offcanvas-backdrop.show {
+        display: block;
+    }
+
+    .offcanvas-header {
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .offcanvas-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        opacity: 0.5;
+        font-size: 1.5rem;
+        padding: 0;
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    .btn-close:hover {
+        opacity: 0.75;
+    }
+
+    .offcanvas-body {
+        padding: 1.5rem;
+        overflow-y: auto;
+    }
+
+    @media (max-width: 768px) {
+        .offcanvas {
+            width: 100% !important;
+        }
+    }
+
 
 
 </style>
@@ -784,7 +869,43 @@
     });
 </script>
 
+<!-- Help Offcanvas -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="groupHelpCanvas" aria-labelledby="groupHelpLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="groupHelpLabel">
+            <i class="fas fa-circle-question" style="margin-right: 0.5rem;"></i>
+            Group Help & Guide
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div>
+                <h6 style="font-weight: 600; margin-bottom: 0.5rem;"><i class="fas fa-users" style="margin-right: 0.5rem; color: #2563eb;"></i>What is a Group?</h6>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">A group allows you to collaborate with team members on shared inventory lists. All members can view and manage lists together.</p>
+            </div>
+            <div>
+                <h6 style="font-weight: 600; margin-bottom: 0.5rem;"><i class="fas fa-list" style="margin-right: 0.5rem; color: #2563eb;"></i>Managing Lists</h6>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Create new lists within this group using the <strong>Create New List</strong> button. All group members will have access to these lists.</p>
+            </div>
+            <div>
+                <h6 style="font-weight: 600; margin-bottom: 0.5rem;"><i class="fas fa-user-plus" style="margin-right: 0.5rem; color: #2563eb;"></i>Adding Members</h6>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Go to the Members tab and use <strong>Add Member</strong> to invite users to your group. They'll receive an invitation and can start collaborating immediately.</p>
+            </div>
+            <div>
+                <h6 style="font-weight: 600; margin-bottom: 0.5rem;"><i class="fas fa-cog" style="margin-right: 0.5rem; color: #2563eb;"></i>Group Settings</h6>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Group owners can edit settings, manage membership permissions, and control who can create or edit lists.</p>
+            </div>
+            <div>
+                <h6 style="font-weight: 600; margin-bottom: 0.5rem;"><i class="fas fa-trash" style="margin-right: 0.5rem; color: #dc2626;"></i>Deleting a Group</h6>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Only group owners can delete a group. This will permanently delete all lists and items in the group. Find the delete option in the Settings tab under "Danger Zone".</p>
+            </div>
+        </div>
+    </div>
+</div>
 
+<!-- Bootstrap JS for Offcanvas -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 {% endblock %}
 

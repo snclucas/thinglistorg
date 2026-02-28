@@ -46,7 +46,7 @@
 
 .stat-box {
     background: white;
-    padding: 1.5rem;
+    padding: 1rem 1.5rem;
     border-radius: var(--radius-lg);
     border: 1px solid var(--gray-200);
     box-shadow: var(--shadow-sm);
@@ -68,12 +68,12 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
     line-height: 1;
+    margin-bottom: 0.25rem;
 }
 
 .stat-label {
     font-size: 0.875rem;
     color: var(--gray-600);
-    margin-top: 0.5rem;
     font-weight: 500;
 }
 

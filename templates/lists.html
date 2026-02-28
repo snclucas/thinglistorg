@@ -14,17 +14,111 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='lists.css') }}">
+<style>
+    /* Offcanvas Help Panel Styling */
+    .offcanvas {
+        width: 400px !important;
+        background: white;
+        position: fixed;
+        top: 0;
+        right: 0;
+        height: 100vh;
+        z-index: 1050;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .offcanvas.show {
+        transform: translateX(0);
+    }
+
+    .offcanvas-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1040;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: none;
+    }
+
+    .offcanvas-backdrop.show {
+        display: block;
+    }
+
+    .offcanvas-header {
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .offcanvas-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        opacity: 0.5;
+        font-size: 1.5rem;
+        padding: 0;
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    .btn-close:hover {
+        opacity: 0.75;
+    }
+
+    .offcanvas-body {
+        padding: 1.5rem;
+        overflow-y: auto;
+    }
+
+    @media (max-width: 768px) {
+        .offcanvas {
+            width: 100% !important;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="modern-animate-in">
     <!-- Page Header -->
     {% if lists %}
-    <div class="page-header">
-        <a href="{{ url_for('create_list') }}" class="modern-btn modern-btn-primary">
-            <i class="fas fa-plus"></i>
-            Create New List
-        </a>
+    <div class="page-header" style="flex-direction: row; align-items: center; justify-content: space-between;">
+        <div>
+            <a href="{{ url_for('create_list') }}" class="modern-btn modern-btn-primary">
+                <i class="fas fa-plus"></i>
+                Create New List
+            </a>
+        </div>
+        <button type="button" class="modern-btn modern-btn-secondary" data-bs-toggle="offcanvas" data-bs-target="#listsHelpCanvas" aria-controls="listsHelpCanvas" title="Get help">
+            <i class="fas fa-circle-question"></i>
+            Help
+        </button>
+    </div>
+{% else %}
+    <div class="page-header" style="flex-direction: row; align-items: center; justify-content: space-between;">
+        <div>
+            <a href="{{ url_for('create_list') }}" class="modern-btn modern-btn-primary">
+                <i class="fas fa-plus"></i>
+                Create New List
+            </a>
+        </div>
+        <button type="button" class="modern-btn modern-btn-secondary" data-bs-toggle="offcanvas" data-bs-target="#listsHelpCanvas" aria-controls="listsHelpCanvas" title="Get help">
+            <i class="fas fa-circle-question"></i>
+            Help
+        </button>
     </div>
 {% endif %}
 
@@ -150,5 +244,48 @@
         </div>
     {% endif %}
 </div>
+
+<!-- Help Offcanvas -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="listsHelpCanvas" aria-labelledby="listsHelpLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="listsHelpLabel">
+            <i class="fas fa-circle-question" style="margin-right: 0.5rem;"></i>
+            Lists Help & Guide
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div>
+                <h6 style="font-weight: 600; margin-bottom: 0.5rem;"><i class="fas fa-list" style="margin-right: 0.5rem; color: #2563eb;"></i>What is a List?</h6>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">A list is a collection of items you want to track. You can organize items by type, location, quantity, and more. Create lists for different categories like kitchen supplies, tools, inventory, etc.</p>
+            </div>
+            <div>
+                <h6 style="font-weight: 600; margin-bottom: 0.5rem;"><i class="fas fa-plus-circle" style="margin-right: 0.5rem; color: #2563eb;"></i>Creating a New List</h6>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Click the <strong>Create New List</strong> button to get started. Give your list a name, optional description, and set visibility preferences.</p>
+            </div>
+            <div>
+                <h6 style="font-weight: 600; margin-bottom: 0.5rem;"><i class="fas fa-shield-alt" style="margin-right: 0.5rem; color: #2563eb;"></i>Privacy Settings</h6>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;"><strong>Private:</strong> Only you can access. <strong>Public:</strong> Searchable and shareable. <strong>Hidden:</strong> Not searchable but accessible via direct link.</p>
+            </div>
+            <div>
+                <h6 style="font-weight: 600; margin-bottom: 0.5rem;"><i class="fas fa-tag" style="margin-right: 0.5rem; color: #2563eb;"></i>Using Tags</h6>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Add tags when creating a list to organize and categorize your lists. Use comma-separated values like "kitchen, urgent, supplies".</p>
+            </div>
+            <div>
+                <h6 style="font-weight: 600; margin-bottom: 0.5rem;"><i class="fas fa-sharing-alt" style="margin-right: 0.5rem; color: #2563eb;"></i>Sharing Lists</h6>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Share lists with group members by creating them within a group, or share individual lists using the sharing features in the list view.</p>
+            </div>
+            <div>
+                <h6 style="font-weight: 600; margin-bottom: 0.5rem;"><i class="fas fa-pencil" style="margin-right: 0.5rem; color: #2563eb;"></i>Editing & Managing</h6>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Click on a list to view its items. From there, you can add items, edit details, and manage the list. Items can include quantities, locations, categories, and custom fields.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS for Offcanvas -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 {% endblock %}
 

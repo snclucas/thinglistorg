@@ -32,7 +32,48 @@
 
     <!-- List Header -->
     <div class="list-header-card">
-        <div class="list-header-content">
+        <div class="list-header-content" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                {% if current_user.is_authenticated and list.user_id == current_user.id %}
+                    <a href="{{ url_for('edit_list', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
+                        <i class="fas fa-pen"></i>
+                        Edit List
+                    </a>
+                    <a href="{{ url_for('share_list', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
+                        <i class="fas fa-share-alt"></i>
+                        Share
+                    </a>
+                    <a href="{{ url_for('list_settings', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                    <a href="{{ url_for('export_items', list_id=list.id, format='json') }}" class="modern-btn modern-btn-secondary" title="Export as JSON">
+                        <i class="fas fa-download"></i>
+                        Export (JSON)
+                    </a>
+                    <a href="{{ url_for('export_items', list_id=list.id, format='csv') }}" class="modern-btn modern-btn-secondary" title="Export as CSV">
+                        <i class="fas fa-download"></i>
+                        Export (CSV)
+                    </a>
+                    <a href="{{ url_for('import_items', list_id=list.id) }}" class="modern-btn modern-btn-secondary" title="Import items">
+                        <i class="fas fa-upload"></i>
+                        Import
+                    </a>
+                    <form method="POST" action="{{ url_for('delete_list', list_id=list.id) }}" style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="modern-btn modern-btn-danger" onclick="return confirm('Delete this list and all its items? This cannot be undone.');">
+                            <i class="fas fa-trash"></i>
+                            Delete List
+                        </button>
+                    </form>
+                {% elif not current_user.is_authenticated %}
+                    <a href="{{ url_for('login', next=request.url) }}" class="modern-btn modern-btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login to Edit
+                    </a>
+                {% endif %}
+            </div>
+
             <div class="list-info">
                 <h1 class="list-title">{{ list.name }}</h1>
 
@@ -47,71 +88,17 @@
                         <i class="fas fa-box list-meta-icon"></i>
                         <span><span class="list-meta-value">{{ items|length }}</span> items</span>
                     </div>
-                    <div class="list-meta-item">
-                        <i class="fas fa-calendar list-meta-icon"></i>
-                        <span>Created <span class="list-meta-value">{{ list.created_at.strftime('%b %d, %Y') }}</span></span>
-                    </div>
-                    {% if list.updated_at and list.updated_at != list.created_at %}
-                    <div class="list-meta-item">
-                        <i class="fas fa-sync list-meta-icon"></i>
-                        <span>Updated <span class="list-meta-value">{{ list.updated_at.strftime('%b %d, %Y') }}</span></span>
+
+                    {% if list.get_tags_list() %}
+                    <div class="list-tags-inline" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                        {% for tag in list.get_tags_list() %}
+                            <span class="modern-badge modern-badge-primary">{{ tag }}</span>
+                        {% endfor %}
                     </div>
                     {% endif %}
                 </div>
-
-                {% if list.get_tags_list() %}
-                <div class="list-tags-section">
-                    {% for tag in list.get_tags_list() %}
-                        <span class="modern-badge modern-badge-primary">{{ tag }}</span>
-                    {% endfor %}
-                </div>
-                {% endif %}
-            </div>
-
-            <div class="list-actions-group">
-                {% if current_user.is_authenticated and list.user_id == current_user.id %}
-                    <a href="{{ url_for('edit_list', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
-                        <i class="fas fa-pen"></i>
-                        Edit List
-                    </a>
-                    <a href="{{ url_for('share_list', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
-                        <i class="fas fa-share-alt"></i>
-                        Share
-                    </a>
-                    <a href="{{ url_for('list_settings', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
-                        <i class="fas fa-cog"></i>
-                        Settings
-                    </a>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <a href="{{ url_for('export_items', list_id=list.id, format='json') }}" class="modern-btn modern-btn-secondary" title="Export as JSON">
-                            <i class="fas fa-download"></i>
-                            Export (JSON)
-                        </a>
-                        <a href="{{ url_for('export_items', list_id=list.id, format='csv') }}" class="modern-btn modern-btn-secondary" title="Export as CSV">
-                            <i class="fas fa-download"></i>
-                            Export (CSV)
-                        </a>
-                        <a href="{{ url_for('import_items', list_id=list.id) }}" class="modern-btn modern-btn-secondary" title="Import items">
-                            <i class="fas fa-upload"></i>
-                            Import
-                        </a>
-                    </div>
-                    <form method="POST" action="{{ url_for('delete_list', list_id=list.id) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <button type="submit" class="modern-btn modern-btn-danger" style="width: 100%;" onclick="return confirm('Delete this list and all its items? This cannot be undone.');">
-                            <i class="fas fa-trash"></i>
-                            Delete List
-                        </button>
-                    </form>
-                {% elif not current_user.is_authenticated %}
-                    <a href="{{ url_for('login', next=request.url) }}" class="modern-btn modern-btn-primary">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Login to Edit
-                    </a>
-                {% endif %}
             </div>
         </div>
-    </div>
 
     <!-- Items Section -->
     <div class="items-section-card">
