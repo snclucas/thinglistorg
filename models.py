@@ -270,6 +270,8 @@ class Group(db.Model):
 
 
     id = db.Column(db.Integer, primary_key=True)
+    unique_id = db.Column(db.String(36), unique=True, nullable=True, index=True, 
+                         default=lambda: str(__import__('uuid').uuid4()))  # Auto-generate UUID on insert
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)

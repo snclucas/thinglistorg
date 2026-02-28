@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, send_from_directory, Response, current_app
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, send_from_directory, send_file, Response, current_app
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -166,6 +166,39 @@ def _cache_get(key):
 
 def _cache_set(key, value):
     _autocomplete_cache[key] = (value, time.time())
+
+def _get_unique_id(table_name, entity_id):
+    """Fetch unique_id from database using raw SQL
+    
+    Used during migration period when unique_id column exists in DB but not in ORM model.
+    If unique_id doesn't exist or is NULL, generates a new UUID and stores it.
+    """
+    try:
+        result = db.session.execute(
+            text(f'SELECT unique_id FROM {table_name} WHERE id = :id'),
+            {'id': entity_id}
+        ).fetchone()
+        
+        unique_id = result[0] if result and result[0] else None
+        
+        # If no unique_id, generate one
+        if not unique_id:
+            unique_id = str(uuid.uuid4())
+            # Store the generated UUID
+            db.session.execute(
+                text(f'UPDATE {table_name} SET unique_id = :uid WHERE id = :id'),
+                {'uid': unique_id, 'id': entity_id}
+            )
+            try:
+                db.session.commit()
+            except:
+                db.session.rollback()
+        
+        return unique_id
+    except Exception as e:
+        app.logger.error(f'Error fetching unique_id from {table_name}: {str(e)}')
+        # Fallback: generate and return a UUID
+        return str(uuid.uuid4())
 
 
 def _parse_tags(raw_tags):
@@ -3224,111 +3257,98 @@ def _get_list_access_type(lst, current_user_id):
 @app.route('/gdpr/export-data')
 @login_required
 def export_data():
-    """Export user's personal data in JSON format (GDPR right to data portability)"""
+    """Export user's personal data in JSON format (GDPR right to data portability)
+    Uses unique_id instead of database IDs for portability and privacy"""
     try:
         import json
         from io import BytesIO
 
-        # Collect all user data
+        # Collect all user data - using unique_ids instead of database IDs
         user_data = {
-            'user': {
-                'id': current_user.id,
-                'username': current_user.username,
-                'email': current_user.email,
-                'created_at': current_user.created_at.isoformat() if current_user.created_at else None,
-                'updated_at': current_user.updated_at.isoformat() if current_user.updated_at else None,
-                'is_active': current_user.is_active,
-                'preferences': current_user.preferences,
-            },
+            'version': '1.0',
+            'export_type': 'account_data',
+            'username': current_user.username,
+            'email': current_user.email,
+            'preferences': current_user.preferences or {},
+            'groups': [],
             'lists': [],
             'items': [],
-            'groups': [],
-            'group_memberships': [],
             'list_shares': [],
-            'notifications': [],
-            'audit_logs': []
         }
 
-        # Collect lists
-        lists = List.query.filter_by(user_id=current_user.id).all()
-        for lst in lists:
-            user_data['lists'].append({
-                'id': lst.id,
-                'name': lst.name,
-                'description': lst.description,
-                'visibility': lst.visibility,
-                'created_at': lst.created_at.isoformat() if lst.created_at else None,
-                'updated_at': lst.updated_at.isoformat() if lst.updated_at else None,
-                'items_count': len(lst.items)
+        # Collect groups owned (with unique_id)
+        groups = Group.query.filter_by(owner_id=current_user.id).all()
+        for group in groups:
+            # Get unique_id using helper function (handles migration period)
+            group_unique_id = _get_unique_id('groups', group.id)
+            
+            user_data['groups'].append({
+                'unique_id': group_unique_id,
+                'name': group.name,
+                'description': group.description or '',
+                'settings': group.settings or {},
+                'members': [
+                    {
+                        'username': member.user.username,
+                        'email': member.user.email,
+                        'role': member.role,
+                        'permissions': member.permissions or {}
+                    }
+                    for member in group.members
+                ]
             })
 
-        # Collect items
+        # Collect lists (with unique_id and linked to group unique_id)
+        lists = List.query.filter_by(user_id=current_user.id).all()
+        for lst in lists:
+            # Get group unique_id if list belongs to a group
+            group_unique_id = None
+            if lst.group_id:
+                group_unique_id = _get_unique_id('groups', lst.group_id)
+            
+            user_data['lists'].append({
+                'unique_id': lst.unique_id,
+                'name': lst.name,
+                'description': lst.description or '',
+                'tags': lst.get_tags_list() if hasattr(lst, 'get_tags_list') else [],
+                'visibility': lst.visibility,
+                'group_unique_id': group_unique_id,
+                'item_count': len(lst.items)
+            })
+
+        # Collect items (with unique_id and linked to list unique_id)
         items = Item.query.filter(Item.list_id.in_(
             db.session.query(List.id).filter_by(user_id=current_user.id)
         )).all()
         for item in items:
             user_data['items'].append({
-                'id': item.id,
+                'unique_id': item.unique_id,
+                'list_unique_id': item.list.unique_id,
                 'name': item.name,
-                'description': item.description,
-                'list_id': item.list_id,
+                'description': item.description or '',
+                'notes': item.notes or '',
+                'tags': item.get_tags_list(),
+                'item_type': item.item_type.name if item.item_type else None,
+                'location': item.location or '',
                 'quantity': item.quantity,
-                'created_at': item.created_at.isoformat() if item.created_at else None,
-                'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+                'barcode': item.barcode or '',
+                'low_stock_threshold': item.low_stock_threshold or 0,
+                'url': item.url or '',
+                'reminder_at': item.reminder_at.isoformat() if item.reminder_at else None
             })
 
-        # Collect groups owned
-        groups = Group.query.filter_by(owner_id=current_user.id).all()
-        for group in groups:
-            user_data['groups'].append({
-                'id': group.id,
-                'name': group.name,
-                'description': group.description,
-                'created_at': group.created_at.isoformat() if group.created_at else None,
-                'member_count': len(group.members)
-            })
-
-        # Collect group memberships
-        memberships = GroupMember.query.filter_by(user_id=current_user.id).all()
-        for membership in memberships:
-            user_data['group_memberships'].append({
-                'group_id': membership.group_id,
-                'group_name': membership.group.name,
-                'role': membership.role,
-                'joined_at': membership.joined_at.isoformat() if membership.joined_at else None,
-            })
-
-        # Collect list shares
+        # Collect list shares (with unique_ids instead of database IDs)
         shares = ListShare.query.filter_by(user_id=current_user.id).all()
         for share in shares:
             user_data['list_shares'].append({
-                'list_id': share.list_id,
+                'list_unique_id': share.list.unique_id,
                 'list_name': share.list.name,
                 'permission': share.permission,
-                'shared_at': share.shared_at.isoformat() if share.shared_at else None,
+                'shared_by_username': share.shared_by.username
             })
 
-        # Collect notifications
-        notifications = Notification.query.filter_by(user_id=current_user.id).all()
-        for notif in notifications:
-            user_data['notifications'].append({
-                'id': notif.id,
-                'type': notif.notification_type,
-                'message': notif.message,
-                'is_read': notif.is_read,
-                'created_at': notif.created_at.isoformat() if notif.created_at else None,
-            })
-
-        # Collect audit logs
-        logs = AuditLog.query.filter_by(user_id=current_user.id).all()
-        for log in logs:
-            user_data['audit_logs'].append({
-                'id': log.id,
-                'action': log.action,
-                'entity': log.entity,
-                'entity_id': log.entity_id,
-                'created_at': log.created_at.isoformat() if log.created_at else None,
-            })
+        # Commit any newly generated unique_ids
+        db.session.commit()
 
         # Create JSON response
         json_data = json.dumps(user_data, indent=2)
@@ -3339,11 +3359,11 @@ def export_data():
             BytesIO(json_data.encode('utf-8')),
             mimetype='application/json',
             as_attachment=True,
-            download_name=f'thinglist_data_export_{current_user.username}_{datetime.datetime.utcnow().strftime("%Y%m%d")}.json'
+            download_name=f'thinglist_export_{current_user.username}_{datetime.datetime.utcnow().strftime("%Y%m%d")}.json'
         )
 
         # Log the data export action
-        _log_action('export', 'account_data', current_user.id, {'exported_at': datetime.datetime.utcnow().isoformat()})
+        _log_action('export', 'account_data', current_user.id, {})
 
         return response
     except Exception as e:
@@ -3465,6 +3485,408 @@ def terms_of_service():
 def data_processing():
     """Data Processing & GDPR Compliance information"""
     return render_template('gdpr/data_processing.html')
+
+
+# ============================================================================
+# PHASE 2: ACCOUNT-LEVEL DATA EXPORT AND IMPORT
+# ============================================================================
+
+@app.route('/user/data-management')
+@login_required
+def data_management():
+    """Display data management and export/import options"""
+    return render_template('data_management.html')
+
+
+@app.route('/user/export-all-data', methods=['GET'])
+@login_required
+@limiter.limit("5 per minute")
+def export_all_user_data():
+    """Export all user data including groups, lists, items, and shares
+    Uses unique_id instead of database IDs for portability"""
+    try:
+        from io import BytesIO
+        
+        export_data = {
+            'version': '1.0',
+            'export_type': 'full_account_export',
+            'username': current_user.username,
+            'email': current_user.email,
+            'preferences': current_user.preferences or {},
+            'groups': [],
+            'lists': [],
+            'items': [],
+            'list_shares': [],
+        }
+
+        # Export all groups owned by user
+        groups = Group.query.filter_by(owner_id=current_user.id).all()
+        for group in groups:
+            # Get unique_id using helper function (handles migration period)
+            group_unique_id = _get_unique_id('groups', group.id)
+            
+            export_data['groups'].append({
+                'unique_id': group_unique_id,
+                'name': group.name,
+                'description': group.description or '',
+                'settings': group.settings or {},
+                'members': [
+                    {
+                        'username': member.user.username,
+                        'email': member.user.email,
+                        'role': member.role,
+                        'permissions': member.permissions or {}
+                    }
+                    for member in group.members
+                ]
+            })
+
+        # Export all lists owned by user
+        lists = List.query.filter_by(user_id=current_user.id).all()
+        for lst in lists:
+            # Get group unique_id if list belongs to a group
+            group_unique_id = None
+            if lst.group_id:
+                group_unique_id = _get_unique_id('groups', lst.group_id)
+            
+            export_data['lists'].append({
+                'unique_id': lst.unique_id,
+                'name': lst.name,
+                'description': lst.description or '',
+                'tags': lst.get_tags_list() if hasattr(lst, 'get_tags_list') else [],
+                'visibility': lst.visibility,
+                'group_unique_id': group_unique_id,
+                'item_count': len(lst.items)
+            })
+
+        # Export all items in user's lists
+        items = Item.query.filter(Item.list_id.in_(
+            db.session.query(List.id).filter_by(user_id=current_user.id)
+        )).all()
+        for item in items:
+            export_data['items'].append({
+                'unique_id': item.unique_id,
+                'list_unique_id': item.list.unique_id,
+                'name': item.name,
+                'description': item.description or '',
+                'notes': item.notes or '',
+                'tags': item.get_tags_list(),
+                'item_type': item.item_type.name if item.item_type else None,
+                'location': item.location or '',
+                'quantity': item.quantity,
+                'barcode': item.barcode or '',
+                'low_stock_threshold': item.low_stock_threshold or 0,
+                'url': item.url or '',
+                'reminder_at': item.reminder_at.isoformat() if item.reminder_at else None
+            })
+
+        # Export list shares (lists shared with this user by others)
+        shares = ListShare.query.filter_by(user_id=current_user.id).all()
+        for share in shares:
+            export_data['list_shares'].append({
+                'list_unique_id': share.list.unique_id,
+                'list_name': share.list.name,
+                'permission': share.permission,
+                'shared_by_username': share.shared_by.username
+            })
+
+        # Create JSON response
+        json_str = json.dumps(export_data, indent=2)
+
+        # Return as downloadable file
+        response = send_file(
+            BytesIO(json_str.encode('utf-8')),
+            mimetype='application/json',
+            as_attachment=True,
+            download_name=f'thinglist_full_export_{current_user.username}_{datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")}.json'
+        )
+
+        # Log the export action
+        _log_action('export', 'full_account_data', current_user.id, {
+            'groups': len(groups),
+            'lists': len(lists),
+            'items': len(items),
+            'shares': len(shares)
+        })
+
+        return response
+    except Exception as e:
+        app.logger.error(f'Full data export error for user {current_user.id}: {str(e)}')
+        flash(f'Export failed: {str(e)}', 'error')
+        return redirect(url_for('profile'))
+
+
+@app.route('/user/import-all-data', methods=['GET', 'POST'])
+@login_required
+@limiter.limit("5 per minute")
+def import_all_user_data():
+    """Import all user data from full account export
+    Supports conflict resolution for groups, lists, and items"""
+    if request.method == 'GET':
+        # Show import form
+        return render_template('import_all_data.html')
+
+    # POST - Handle the import
+    file = request.files.get('import_file')
+    group_conflict = request.form.get('group_conflict', 'skip')  # skip, overwrite, or merge
+    list_conflict = request.form.get('list_conflict', 'skip')    # skip, overwrite, or create_new
+    item_conflict = request.form.get('item_conflict', 'skip')    # skip or overwrite
+
+    if not file or not file.filename:
+        flash('Please select a file to import.', 'error')
+        return redirect(url_for('import_all_user_data'))
+
+    try:
+        content = file.stream.read().decode('utf-8')
+        data = json.loads(content)
+
+        # Validate file format
+        if data.get('export_type') != 'full_account_export':
+            flash('Invalid export file. Please use a file exported from "Export All Data".', 'error')
+            return redirect(url_for('import_all_user_data'))
+
+        # Track import statistics
+        stats = {
+            'groups_imported': 0,
+            'groups_skipped': 0,
+            'groups_updated': 0,
+            'lists_imported': 0,
+            'lists_skipped': 0,
+            'lists_updated': 0,
+            'items_imported': 0,
+            'items_skipped': 0,
+            'items_updated': 0,
+        }
+
+        # Map to track imported unique_ids to new database IDs for linking
+        group_id_map = {}  # {old_unique_id: new_group_id}
+        list_id_map = {}   # {old_unique_id: new_list_id}
+
+        # ========== IMPORT GROUPS ==========
+        for group_data in data.get('groups', []):
+            unique_id = group_data.get('unique_id')
+            name = group_data.get('name', '').strip()
+            
+            if not name or not unique_id:
+                continue
+
+            # Check if group with this unique_id already exists (using raw SQL)
+            try:
+                existing_row = db.session.execute(
+                    text('SELECT id FROM groups WHERE unique_id = :uid AND owner_id = :oid'),
+                    {'uid': unique_id, 'oid': current_user.id}
+                ).fetchone()
+                existing_group_id = existing_row[0] if existing_row else None
+            except:
+                existing_group_id = None
+
+            if existing_group_id:
+                # Group already exists
+                existing_group = Group.query.get(existing_group_id)
+                if group_conflict == 'overwrite':
+                    # Update existing group
+                    existing_group.name = name
+                    existing_group.description = group_data.get('description', '')
+                    existing_group.settings = group_data.get('settings', {})
+                    db.session.add(existing_group)
+                    group_id_map[unique_id] = existing_group.id
+                    stats['groups_updated'] += 1
+                elif group_conflict == 'merge':
+                    # Keep existing group, just map it
+                    group_id_map[unique_id] = existing_group.id
+                    stats['groups_skipped'] += 1
+                else:  # skip
+                    group_id_map[unique_id] = existing_group.id
+                    stats['groups_skipped'] += 1
+            else:
+                # Create new group
+                new_group = Group(
+                    name=name,
+                    description=group_data.get('description', ''),
+                    owner_id=current_user.id,
+                    settings=group_data.get('settings', {})
+                )
+                db.session.add(new_group)
+                db.session.flush()  # Get the ID
+                
+                # Store unique_id in database
+                db.session.execute(
+                    text('UPDATE groups SET unique_id = :uid WHERE id = :gid'),
+                    {'uid': unique_id, 'gid': new_group.id}
+                )
+                
+                group_id_map[unique_id] = new_group.id
+                stats['groups_imported'] += 1
+
+                # Add group members
+                for member_data in group_data.get('members', []):
+                    member_username = member_data.get('username')
+                    member_role = member_data.get('role', 'member')
+                    
+                    # Find user by username
+                    member_user = User.query.filter_by(username=member_username).first()
+                    if member_user:
+                        new_member = GroupMember(
+                            group_id=new_group.id,
+                            user_id=member_user.id,
+                            role=member_role,
+                            permissions=member_data.get('permissions', {})
+                        )
+                        db.session.add(new_member)
+
+        # ========== IMPORT LISTS ==========
+        for list_data in data.get('lists', []):
+            unique_id = list_data.get('unique_id')
+            name = list_data.get('name', '').strip()
+            group_unique_id = list_data.get('group_unique_id')
+            
+            if not name or not unique_id:
+                continue
+
+            # Check if list with this unique_id already exists
+            existing_list = List.query.filter_by(unique_id=unique_id, user_id=current_user.id).first()
+
+            if existing_list:
+                # List already exists
+                if list_conflict == 'overwrite':
+                    # Update existing list
+                    existing_list.name = name
+                    existing_list.description = list_data.get('description', '')
+                    existing_list.visibility = list_data.get('visibility', 'private')
+                    if group_unique_id and group_unique_id in group_id_map:
+                        existing_list.group_id = group_id_map[group_unique_id]
+                    else:
+                        existing_list.group_id = None
+                    db.session.add(existing_list)
+                    list_id_map[unique_id] = existing_list.id
+                    stats['lists_updated'] += 1
+                else:  # skip or create_new both skip
+                    list_id_map[unique_id] = existing_list.id
+                    stats['lists_skipped'] += 1
+            else:
+                # Create new list
+                new_list = List(
+                    unique_id=unique_id,
+                    name=name,
+                    description=list_data.get('description', ''),
+                    visibility=list_data.get('visibility', 'private'),
+                    user_id=current_user.id,
+                    group_id=group_id_map.get(group_unique_id) if group_unique_id else None
+                )
+                db.session.add(new_list)
+                db.session.flush()  # Get the ID
+                list_id_map[unique_id] = new_list.id
+                
+                # Add tags if present
+                tags_list = list_data.get('tags', [])
+                if tags_list and hasattr(new_list, 'set_tags_list'):
+                    new_list.set_tags_list(tags_list)
+                
+                stats['lists_imported'] += 1
+
+        # ========== IMPORT ITEMS ==========
+        for item_data in data.get('items', []):
+            unique_id = item_data.get('unique_id')
+            name = (item_data.get('name') or '').strip()
+            list_unique_id = item_data.get('list_unique_id')
+            
+            if not name or not unique_id or list_unique_id not in list_id_map:
+                continue
+
+            list_id = list_id_map[list_unique_id]
+
+            # Check if item with this unique_id already exists in this list
+            existing_item = Item.query.filter_by(unique_id=unique_id, list_id=list_id).first()
+
+            if existing_item:
+                # Item already exists
+                if item_conflict == 'overwrite':
+                    # Update existing item
+                    existing_item.name = name
+                    existing_item.description = item_data.get('description', '')
+                    existing_item.notes = item_data.get('notes', '')
+                    existing_item.location = item_data.get('location', '')
+                    existing_item.quantity = int(item_data.get('quantity', 1))
+                    existing_item.barcode = item_data.get('barcode', '')
+                    existing_item.low_stock_threshold = int(item_data.get('low_stock_threshold', 0))
+                    existing_item.url = item_data.get('url', '')
+                    
+                    # Set item type
+                    item_type_name = item_data.get('item_type')
+                    if item_type_name:
+                        existing_item.item_type = ItemType.get_or_create(item_type_name, current_user.id)
+                    
+                    # Set reminder
+                    if item_data.get('reminder_at'):
+                        try:
+                            existing_item.reminder_at = datetime.datetime.fromisoformat(item_data['reminder_at'])
+                        except:
+                            existing_item.reminder_at = None
+                    
+                    db.session.add(existing_item)
+                    
+                    # Update tags
+                    tags_list = item_data.get('tags', [])
+                    existing_item.set_tags_list(tags_list)
+                    
+                    stats['items_updated'] += 1
+                else:  # skip
+                    stats['items_skipped'] += 1
+            else:
+                # Create new item
+                item_type = None
+                item_type_name = item_data.get('item_type')
+                if item_type_name:
+                    item_type = ItemType.get_or_create(item_type_name, current_user.id)
+
+                new_item = Item(
+                    unique_id=unique_id,
+                    name=name,
+                    description=item_data.get('description', ''),
+                    notes=item_data.get('notes', ''),
+                    tags=','.join(item_data.get('tags', [])),
+                    item_type=item_type,
+                    location=item_data.get('location', ''),
+                    quantity=int(item_data.get('quantity', 1)),
+                    barcode=item_data.get('barcode', ''),
+                    low_stock_threshold=int(item_data.get('low_stock_threshold', 0)),
+                    url=item_data.get('url', ''),
+                    list_id=list_id
+                )
+
+                # Set reminder
+                if item_data.get('reminder_at'):
+                    try:
+                        new_item.reminder_at = datetime.datetime.fromisoformat(item_data['reminder_at'])
+                    except:
+                        new_item.reminder_at = None
+
+                db.session.add(new_item)
+                db.session.flush()  # Get the ID
+                
+                # Set tags
+                tags_list = item_data.get('tags', [])
+                new_item.set_tags_list(tags_list)
+                
+                stats['items_imported'] += 1
+
+        db.session.commit()
+        _log_action('import', 'full_account_data', current_user.id, stats)
+
+        message = (f'Import complete: '
+                   f'{stats["groups_imported"]} groups, '
+                   f'{stats["lists_imported"]} lists, '
+                   f'{stats["items_imported"]} items imported. '
+                   f'{stats["groups_skipped"]} groups, {stats["lists_skipped"]} lists, {stats["items_skipped"]} items skipped.')
+        flash(message, 'success')
+    except json.JSONDecodeError:
+        flash('Invalid JSON file format.', 'error')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f'Full data import error for user {current_user.id}: {str(e)}')
+        flash(f'Import failed: {str(e)}', 'error')
+
+    return redirect(url_for('profile'))
 
 
 if __name__ == '__main__':

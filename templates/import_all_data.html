@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block title %}Import All Data - ThingList{% endblock %}
+
+{% block meta_description %}Import your complete data from a ThingList export file.{% endblock %}
+
+{% block meta_keywords %}import, data, account, backup, restore{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block extra_css %}
+<style>
+    .import-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        background: white;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .import-header {
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 1.5rem;
+    }
+
+    .import-header h1 {
+        color: #2563eb;
+        margin: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 2rem;
+    }
+
+    .import-header p {
+        color: #6b7280;
+        margin: 0;
+    }
+
+    .import-form {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0.5rem 0 0 0;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.95rem;
+    }
+
+    .form-group input[type="file"],
+    .form-group select {
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+        transition: all 0.2s;
+    }
+
+    .form-group input[type="file"]:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-info {
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+    }
+
+    .conflict-options {
+        background: #f9fafb;
+        padding: 1.5rem;
+        border-radius: 6px;
+        border-left: 4px solid #2563eb;
+    }
+
+    .option-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .option-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .radio-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .radio-item input[type="radio"] {
+        margin-top: 0.25rem;
+        cursor: pointer;
+        accent-color: #2563eb;
+        width: 18px;
+        height: 18px;
+    }
+
+    .radio-content {
+        flex: 1;
+    }
+
+    .radio-label {
+        font-weight: 600;
+        color: #1f2937;
+        cursor: pointer;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .radio-desc {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin: 0;
+    }
+
+    .help-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        color: #1e40af;
+        font-size: 0.9rem;
+    }
+
+    .help-box strong {
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .help-box ul {
+        margin: 0.5rem 0 0 1.5rem;
+        padding: 0;
+    }
+
+    .help-box li {
+        margin: 0.25rem 0;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        justify-content: flex-end;
+    }
+
+    .btn {
+        padding: 0.875rem 1.75rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background: #2563eb;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-secondary {
+        background: #e5e7eb;
+        color: #374151;
+    }
+
+    .btn-secondary:hover {
+        background: #d1d5db;
+    }
+
+    .info-box {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 6px;
+        padding: 1rem;
+        color: #166534;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+    }
+
+    .warning-box {
+        background: #fef3c7;
+        border: 1px solid #fcd34d;
+        border-radius: 6px;
+        padding: 1rem;
+        color: #92400e;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+    }
+
+    .divider {
+        height: 1px;
+        background: #e5e7eb;
+        margin: 1.5rem 0;
+    }
+
+    @media (max-width: 640px) {
+        .import-container {
+            padding: 1.5rem;
+        }
+
+        .import-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .button-group {
+            flex-direction: column-reverse;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="import-container">
+    <div class="import-header">
+        <h1>
+            <i class="fas fa-cloud-upload-alt"></i>
+            Import Your Data
+        </h1>
+        <p>Restore your complete account data from an export file</p>
+    </div>
+
+    <div class="info-box">
+        <strong>ℹ️ About Full Data Import</strong><br>
+        This will import your complete account data including groups, lists, items, and all associated information. You can choose how to handle conflicts with existing data.
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="import-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <!-- File Upload Section -->
+        <div class="form-section">
+            <h2 class="section-title">1. Select Your Export File</h2>
+            <div class="form-group">
+                <label for="import_file">Choose File</label>
+                <input type="file" id="import_file" name="import_file" accept=".json" required>
+                <small class="form-info">📄 Must be a .json file exported from "Export All Data"</small>
+            </div>
+        </div>
+
+        <!-- Conflict Resolution -->
+        <div class="form-section">
+            <h2 class="section-title">2. Choose How to Handle Conflicts</h2>
+            <p style="color: #6b7280; margin: 0 0 1rem 0; font-size: 0.9rem;">
+                If you have items that already exist with matching unique IDs, choose what happens:
+            </p>
+
+            <div class="conflict-options">
+                <!-- Groups Conflict Resolution -->
+                <div class="option-group">
+                    <label style="font-weight: 700; color: #1f2937; margin-bottom: 0.75rem;">
+                        Groups
+                    </label>
+                    <div class="radio-item">
+                        <input type="radio" id="group_skip" name="group_conflict" value="skip" checked>
+                        <div class="radio-content">
+                            <label for="group_skip" class="radio-label">Skip Existing Groups</label>
+                            <p class="radio-desc">Keep your existing groups. Only import new groups.</p>
+                        </div>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="group_overwrite" name="group_conflict" value="overwrite">
+                        <div class="radio-content">
+                            <label for="group_overwrite" class="radio-label">Overwrite Existing Groups</label>
+                            <p class="radio-desc">Replace your existing groups with imported data.</p>
+                        </div>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="group_merge" name="group_conflict" value="merge">
+                        <div class="radio-content">
+                            <label for="group_merge" class="radio-label">Merge (Keep Existing)</label>
+                            <p class="radio-desc">Keep existing groups, merge in imported data.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lists Conflict Resolution -->
+                <div class="option-group">
+                    <label style="font-weight: 700; color: #1f2937; margin-bottom: 0.75rem;">
+                        Lists
+                    </label>
+                    <div class="radio-item">
+                        <input type="radio" id="list_skip" name="list_conflict" value="skip" checked>
+                        <div class="radio-content">
+                            <label for="list_skip" class="radio-label">Skip Existing Lists</label>
+                            <p class="radio-desc">Keep your existing lists. Only import new lists.</p>
+                        </div>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="list_overwrite" name="list_conflict" value="overwrite">
+                        <div class="radio-content">
+                            <label for="list_overwrite" class="radio-label">Overwrite Existing Lists</label>
+                            <p class="radio-desc">Replace your existing lists with imported data (items not affected).</p>
+                        </div>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="list_create" name="list_conflict" value="create_new">
+                        <div class="radio-content">
+                            <label for="list_create" class="radio-label">Create New Copies</label>
+                            <p class="radio-desc">Keep existing lists and create new copies of imported lists.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items Conflict Resolution -->
+                <div class="option-group">
+                    <label style="font-weight: 700; color: #1f2937; margin-bottom: 0.75rem;">
+                        Items
+                    </label>
+                    <div class="radio-item">
+                        <input type="radio" id="item_skip" name="item_conflict" value="skip" checked>
+                        <div class="radio-content">
+                            <label for="item_skip" class="radio-label">Skip Existing Items</label>
+                            <p class="radio-desc">Keep your existing items. Only import new items.</p>
+                        </div>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="item_overwrite" name="item_conflict" value="overwrite">
+                        <div class="radio-content">
+                            <label for="item_overwrite" class="radio-label">Overwrite Existing Items</label>
+                            <p class="radio-desc">Replace your existing items with imported data.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="help-box">
+            <strong>💡 How does this work?</strong>
+            <ul>
+                <li><strong>Unique IDs:</strong> Items are matched by their unique ID from export. If an item doesn't exist, it's imported as new.</li>
+                <li><strong>Safe:</strong> Your existing data is never deleted. Choose "Skip" to be conservative.</li>
+                <li><strong>Linked Data:</strong> Groups and lists are re-linked properly during import.</li>
+            </ul>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="button-group">
+            <a href="{{ url_for('profile') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i>
+                Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-check"></i>
+                Import Data
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
