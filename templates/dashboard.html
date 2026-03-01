@@ -195,8 +195,8 @@
 <div class="user-info">
     <h2>Quick Actions</h2>
     <div class="action-buttons">
-        <a href="{{ url_for('lists') }}" class="btn btn-primary">📋 View My Lists</a>
-        <a href="{{ url_for('create_list') }}" class="btn btn-primary">➕ Create New List</a>
+        <a href="{{ url_for('list_item.lists') }}" class="btn btn-primary">📋 View My Lists</a>
+        <a href="{{ url_for('list_item.create_list') }}" class="btn btn-primary">➕ Create New List</a>
     </div>
 </div>
 
@@ -216,10 +216,10 @@
         <ul class="summary-list">
             {% for group in owned_groups %}
             <li class="summary-item">
-                <a href="{{ url_for('view_group', group_id=group.id) }}" class="summary-item-name">
+                <a href="{{ url_for('view_group', group_id=group.slug) }}" class="summary-item-name">
                     {{ group.name }}
                 </a>
-                <a href="{{ url_for('view_group', group_id=group.id) }}" class="summary-item-link">
+                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="summary-item-link">
                     <i class="fas fa-arrow-right"></i> View
                 </a>
             </li>
@@ -236,10 +236,10 @@
         <ul class="summary-list">
             {% for group in member_groups %}
             <li class="summary-item">
-                <a href="{{ url_for('view_group', group_id=group.id) }}" class="summary-item-name">
+                <a href="{{ url_for('view_group', group_id=group.slug) }}" class="summary-item-name">
                     {{ group.name }}
                 </a>
-                <a href="{{ url_for('view_group', group_id=group.id) }}" class="summary-item-link">
+                <a href="{{ url_for('view_group', group_id=group.slug) }}" class="summary-item-link">
                     <i class="fas fa-arrow-right"></i> View
                 </a>
             </li>
@@ -266,16 +266,16 @@
         <ul class="summary-list">
             {% for list in user_lists %}
             <li class="summary-item">
-                <a href="{{ url_for('view_list', list_id=list.id) }}" class="summary-item-name">
+                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="summary-item-name">
                     {{ list.name }}
                 </a>
-                <a href="{{ url_for('view_list', list_id=list.id) }}" class="summary-item-link">
+                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="summary-item-link">
                     <i class="fas fa-arrow-right"></i> View
                 </a>
             </li>
             {% endfor %}
         </ul>
-        <a href="{{ url_for('lists') }}" style="display: inline-block; margin-top: 1rem; color: #2563eb; text-decoration: none; font-weight: 600;">
+        <a href="{{ url_for('list_item.lists') }}" style="display: inline-block; margin-top: 1rem; color: #2563eb; text-decoration: none; font-weight: 600;">
             View All Lists <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
         </a>
     </div>
@@ -289,16 +289,16 @@
         <ul class="summary-list">
             {% for list in shared_lists %}
             <li class="summary-item">
-                <a href="{{ url_for('view_list', list_id=list.id) }}" class="summary-item-name">
+                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="summary-item-name">
                     {{ list.name }}
                 </a>
-                <a href="{{ url_for('view_list', list_id=list.id) }}" class="summary-item-link">
+                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="summary-item-link">
                     <i class="fas fa-arrow-right"></i> View
                 </a>
             </li>
             {% endfor %}
         </ul>
-        <a href="{{ url_for('lists') }}" style="display: inline-block; margin-top: 1rem; color: #2563eb; text-decoration: none; font-weight: 600;">
+        <a href="{{ url_for('list_item.lists') }}" style="display: inline-block; margin-top: 1rem; color: #2563eb; text-decoration: none; font-weight: 600;">
             View All Lists <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
         </a>
     </div>

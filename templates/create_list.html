@@ -182,7 +182,7 @@
 
         <div class="button-group">
             <button type="submit">Create List</button>
-            <a href="{% if group %}{{ url_for('view_group', group_id=group.id) }}{% else %}{{ url_for('lists') }}{% endif %}" class="btn-cancel">Cancel</a>
+            <a href="{% if group %}{{ url_for('view_group', group_id=group.slug) }}{% else %}{{ url_for('list_item.lists') }}{% endif %}" class="btn-cancel">Cancel</a>
         </div>
     </form>
 </div>

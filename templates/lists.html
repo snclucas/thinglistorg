@@ -97,7 +97,7 @@
     {% if lists %}
     <div class="page-header" style="flex-direction: row; align-items: center; justify-content: space-between;">
         <div>
-            <a href="{{ url_for('create_list') }}" class="modern-btn modern-btn-primary">
+            <a href="{{ url_for('list_item.create_list') }}" class="modern-btn modern-btn-primary">
                 <i class="fas fa-plus"></i>
                 Create New List
             </a>
@@ -110,7 +110,7 @@
 {% else %}
     <div class="page-header" style="flex-direction: row; align-items: center; justify-content: space-between;">
         <div>
-            <a href="{{ url_for('create_list') }}" class="modern-btn modern-btn-primary">
+            <a href="{{ url_for('list_item.create_list') }}" class="modern-btn modern-btn-primary">
                 <i class="fas fa-plus"></i>
                 Create New List
             </a>
@@ -169,7 +169,7 @@
                     {% set list = item.list %}
                     <tr>
                         <td data-label="Name" class="list-name-cell">
-                            <a href="{{ url_for('view_list', list_id=list.id) }}" class="list-name-link">
+                                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="list-name-link">
                                 <i class="fas fa-list"></i>
                                 {{ list.name }}
                             </a>
@@ -212,7 +212,7 @@
                         <td data-label="Actions">
                             <div class="list-actions-cell">
                                 {% if item.type == 'owned' %}
-                                    <form method="POST" action="{{ url_for('delete_list', list_id=list.id) }}" style="display: inline;">
+                                    <form method="POST" action="{{ url_for('list_item.delete_list', list_id=list.slug) }}" style="display: inline;">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <button type="submit" class="table-action-btn table-btn-delete" onclick="return confirm('Delete this list and all its items? This cannot be undone.');">
                                             <i class="fas fa-trash"></i>
@@ -237,7 +237,7 @@
             </div>
             <h2 class="empty-title">No Lists Yet</h2>
             <p class="empty-text">Create your first inventory list to start organizing your items!</p>
-            <a href="{{ url_for('create_list') }}" class="modern-btn modern-btn-primary">
+            <a href="{{ url_for('list_item.create_list') }}" class="modern-btn modern-btn-primary">
                 <i class="fas fa-plus"></i>
                 Create Your First List
             </a>

@@ -556,11 +556,11 @@
             <div class="collapsible-content" id="lists-section">
                 <div class="results-grid">
                 {% for list in lists %}
-                <div class="result-card" onclick="window.location.href='{{ url_for('view_list', list_id=list.id) }}'">
+                <div class="result-card" onclick="window.location.href='{{ url_for('list_item.view_list', list_id=list.slug) }}'">
                     <div class="result-card-header">
                         <div style="flex: 1;">
                             <h3 class="result-title">
-                                <a href="{{ url_for('view_list', list_id=list.id) }}">{{ list.name }}</a>
+                                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}">{{ list.name }}</a>
                             </h3>
                             {% if list.description %}
                                 <div class="result-description">{{ list.description[:200] }}{% if list.description|length > 200 %}...{% endif %}</div>
@@ -631,11 +631,11 @@
             <div class="collapsible-content" id="items-section">
                 <div class="results-grid">
                 {% for item in items %}
-                <div class="result-card" onclick="window.location.href='{{ url_for('view_item', item_id=item.id) }}'">
+                <div class="result-card" onclick="window.location.href='{{ url_for('list_item.view_item', item_id=item.slug) }}'">
                     <div class="result-card-header">
                         <div style="flex: 1;">
                             <h3 class="result-title">
-                                <a href="{{ url_for('view_item', item_id=item.id) }}">{{ item.name }}</a>
+                                <a href="{{ url_for('list_item.view_item', item_id=item.slug) }}">{{ item.name }}</a>
                             </h3>
                             {% if item.description %}
                                 <div class="result-description">{{ item.description[:200] }}{% if item.description|length > 200 %}...{% endif %}</div>

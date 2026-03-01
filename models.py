@@ -3,8 +3,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy import func
+import re
 
 db = SQLAlchemy()
+
+
+def generate_slug(name, id):
+    """Generate a URL-friendly slug from name and id"""
+    # Convert to lowercase and replace non-alphanumeric characters with hyphens
+    slug = re.sub(r'[^\w\s-]', '', name.lower())
+    slug = re.sub(r'[-\s]+', '-', slug).strip('-')
+    # Combine with id for uniqueness
+    return f"{slug}-{id}".lower()
 
 
 class User(UserMixin, db.Model):
@@ -272,6 +282,7 @@ class Group(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     unique_id = db.Column(db.String(36), unique=True, nullable=True, index=True, 
                          default=lambda: str(__import__('uuid').uuid4()))  # Auto-generate UUID on insert
+    slug = db.Column(db.String(200), unique=True, nullable=True, index=True)  # URL-friendly slug
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
@@ -292,10 +303,17 @@ class Group(db.Model):
     def __repr__(self):
         return f'<Group {self.name}>'
 
+    def generate_slug(self):
+        """Generate and set the slug from name and id"""
+        if self.id:
+            self.slug = generate_slug(self.name, self.id)
+        return self.slug
+
     def to_dict(self):
         """Convert group to dictionary"""
         return {
             'id': self.id,
+            'slug': self.slug,
             'name': self.name,
             'description': self.description,
             'owner_id': self.owner_id,
@@ -656,6 +674,7 @@ class List(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     unique_id = db.Column(db.String(36), unique=True, nullable=False, index=True, default=lambda: str(__import__('uuid').uuid4()))  # UUID for export/import
+    slug = db.Column(db.String(200), unique=True, nullable=True, index=True)  # URL-friendly slug
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     tags = db.Column(db.String(500))  # Comma-separated tags
@@ -676,10 +695,17 @@ class List(db.Model):
     def __repr__(self):
         return f'<List {self.name}>'
 
+    def generate_slug(self):
+        """Generate and set the slug from name and id"""
+        if self.id:
+            self.slug = generate_slug(self.name, self.id)
+        return self.slug
+
     def to_dict(self):
         """Convert list to dictionary"""
         return {
             'id': self.id,
+            'slug': self.slug,
             'name': self.name,
             'description': self.description,
             'tags': self.tags,
@@ -899,6 +925,7 @@ class Item(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     unique_id = db.Column(db.String(36), nullable=False, index=True, default=lambda: str(__import__('uuid').uuid4()))  # UUID for export/import
+    slug = db.Column(db.String(200), unique=True, nullable=True, index=True)  # URL-friendly slug
     name = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text)
     notes = db.Column(db.Text)
@@ -931,10 +958,17 @@ class Item(db.Model):
     def __repr__(self):
         return f'<Item {self.name}>'
 
+    def generate_slug(self):
+        """Generate and set the slug from name and id"""
+        if self.id:
+            self.slug = generate_slug(self.name, self.id)
+        return self.slug
+
     def to_dict(self):
         """Convert item to dictionary"""
         return {
             'id': self.id,
+            'slug': self.slug,
             'name': self.name,
             'description': self.description,
             'notes': self.notes,
@@ -980,3 +1014,27 @@ class Item(db.Model):
     def is_low_stock(self):
         """Return True if item is below or equal to low stock threshold"""
         return self.low_stock_threshold and self.quantity <= self.low_stock_threshold
+
+# Event listeners to automatically generate slugs
+from sqlalchemy import event
+
+@event.listens_for(Group, 'before_insert')
+@event.listens_for(Group, 'before_update')
+def generate_group_slug(mapper, connection, target):
+    """Generate slug for Group before insert/update"""
+    if target.id:
+        target.generate_slug()
+
+@event.listens_for(List, 'before_insert')
+@event.listens_for(List, 'before_update')
+def generate_list_slug(mapper, connection, target):
+    """Generate slug for List before insert/update"""
+    if target.id:
+        target.generate_slug()
+
+@event.listens_for(Item, 'before_insert')
+@event.listens_for(Item, 'before_update')
+def generate_item_slug(mapper, connection, target):
+    """Generate slug for Item before insert/update"""
+    if target.id:
+        target.generate_slug()

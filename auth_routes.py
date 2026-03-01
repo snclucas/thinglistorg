@@ -150,7 +150,7 @@ def login():
 
             login_user(user, remember=request.form.get('remember') == 'on')
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('lists'))
+            return redirect(next_page) if next_page else redirect(url_for('list_item.lists'))
         else:
             flash('Invalid credentials. Please try again.', 'error')
 

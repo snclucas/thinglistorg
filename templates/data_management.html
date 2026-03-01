@@ -303,7 +303,7 @@
                     <i class="fas fa-cloud-download-alt"></i>
                     Export All Data
                 </a>
-                <a href="{{ url_for('export_items', list_id=1) }}" class="btn btn-secondary" style="display: none;">
+                <a href="{{ url_for('list_item.export_items', list_id=1) }}" class="btn btn-secondary" style="display: none;">
                     <i class="fas fa-list"></i>
                     Export Single List
                 </a>
@@ -363,6 +363,58 @@
             <div class="warning-box">
                 <strong>⚠️ Before Importing:</strong><br>
                 Make sure you have a current backup of your data. While import is safe (you choose how to handle conflicts), it's always good to have a backup just in case.
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear All Data Section -->
+    <div class="data-section">
+        <div class="section-header">
+            <div class="section-icon" style="background: #fee2e2; color: #dc2626;">
+                <i class="fas fa-broom"></i>
+            </div>
+            <div class="section-title">
+                <h2>Clear All Your Data</h2>
+                <p>Delete all lists, items, and groups while keeping your account active</p>
+            </div>
+        </div>
+
+        <div class="section-content">
+            <div class="warning-box">
+                <strong>⚠️ This Action is Permanent:</strong><br>
+                This will delete ALL your lists, items, groups, and associated data. Your account will remain active, but all your data will be permanently removed. Please back up your data first if needed.
+            </div>
+
+            <div class="content-block">
+                <div class="content-label">What Gets Deleted:</div>
+                <ul class="feature-list">
+                    <li>All your lists and their items</li>
+                    <li>All your groups and group memberships</li>
+                    <li>All tags and custom fields</li>
+                    <li>All list shares and permissions</li>
+                    <li>All notifications related to your data</li>
+                </ul>
+            </div>
+
+            <div class="content-block">
+                <div class="content-label">What Stays:</div>
+                <ul class="feature-list">
+                    <li>Your account and login credentials</li>
+                    <li>Your account settings and preferences</li>
+                    <li>Your email address</li>
+                </ul>
+            </div>
+
+            <div class="content-description">
+                <i class="fas fa-lightbulb"></i>
+                <strong>Tip:</strong> Consider exporting your data before clearing it, so you have a backup available.
+            </div>
+
+            <div class="button-group">
+                <a href="{{ url_for('clear_all_user_data') }}" class="btn" style="background: #dc2626; color: white;">
+                    <i class="fas fa-trash-alt"></i>
+                    Clear All Data
+                </a>
             </div>
         </div>
     </div>

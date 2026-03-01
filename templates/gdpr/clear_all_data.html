@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Clear All Data - ThingList{% endblock %}
+
+{% block meta_description %}Clear all your ThingList data while keeping your account active.{% endblock %}
+
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block extra_css %}
+<style>
+    .clear-data-container {
+        max-width: 700px;
+        margin: 2rem auto;
+        background: white;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .clear-data-container h1 {
+        color: #92400e;
+        margin-bottom: 1rem;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+
+    .warning-box {
+        background: #fffbeb;
+        border: 2px solid #fcd34d;
+        border-radius: 6px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .warning-box h2 {
+        color: #b45309;
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+    }
+
+    .warning-box ul {
+        margin: 1rem 0;
+        padding-left: 1.5rem;
+        color: #92400e;
+    }
+
+    .warning-box li {
+        margin-bottom: 0.5rem;
+    }
+
+    .data-summary {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 6px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .data-summary h3 {
+        color: #166534;
+        margin: 0 0 1rem 0;
+        font-size: 1rem;
+    }
+
+    .data-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #dbeafe;
+    }
+
+    .data-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .data-label {
+        color: #166534;
+        font-weight: 500;
+    }
+
+    .data-value {
+        color: #166534;
+        font-weight: 600;
+    }
+
+    .account-remains {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 6px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .account-remains h3 {
+        color: #166534;
+        margin: 0 0 1rem 0;
+        font-size: 1rem;
+    }
+
+    .account-remains ul {
+        margin: 0;
+        padding-left: 1.5rem;
+        color: #166534;
+    }
+
+    .account-remains li {
+        margin-bottom: 0.5rem;
+    }
+
+    .action-section {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .action-section h3 {
+        color: #1f2937;
+        margin: 0 0 1rem 0;
+        font-size: 1rem;
+    }
+
+    .action-button {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+        margin-right: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .action-button-primary {
+        background: #2563eb;
+        color: white;
+    }
+
+    .action-button-primary:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .action-button-warning {
+        background: #dc2626;
+        color: white;
+    }
+
+    .action-button-warning:hover {
+        background: #b91c1c;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    }
+
+    .action-button-secondary {
+        background: #f3f4f6;
+        color: #333;
+    }
+
+    .action-button-secondary:hover {
+        background: #e5e7eb;
+        transform: translateY(-2px);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #1f2937;
+        font-weight: 600;
+    }
+
+    .form-group input[type="password"] {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-family: inherit;
+        box-sizing: border-box;
+    }
+
+    .form-group input[type="password"]:focus {
+        outline: none;
+        border-color: #dc2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+
+    .clear-form {
+        background: #fffbeb;
+        border: 2px solid #fcd34d;
+        border-radius: 6px;
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        color: #1f2937;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        margin-right: 0.75rem;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .checkbox-label span {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="clear-data-container">
+    <h1>⚠️ Clear All Your Data</h1>
+
+    <div class="warning-box">
+        <h2>This will delete all your data</h2>
+        <p>Clearing all your data will:</p>
+        <ul>
+            <li>Permanently delete all your lists and items</li>
+            <li>Remove all groups you own</li>
+            <li>Delete all tags and custom fields</li>
+            <li>Revoke all list shares and permissions</li>
+            <li>Delete all your notifications and activity history</li>
+        </ul>
+        <p><strong>This is permanent and cannot be reversed.</strong></p>
+    </div>
+
+    <div class="data-summary">
+        <h3>📊 Your Data Summary</h3>
+        <div class="data-item">
+            <span class="data-label">📋 Lists:</span>
+            <span class="data-value">{{ lists_count }}</span>
+        </div>
+        <div class="data-item">
+            <span class="data-label">📦 Items:</span>
+            <span class="data-value">{{ items_count }}</span>
+        </div>
+        <div class="data-item">
+            <span class="data-label">👥 Groups Owned:</span>
+            <span class="data-value">{{ groups_count }}</span>
+        </div>
+    </div>
+
+    <div class="account-remains">
+        <h3>✅ Your Account Will Remain Active</h3>
+        <p style="margin: 0 0 1rem 0; color: #166534;">Unlike account deletion, the following will be preserved:</p>
+        <ul>
+            <li>Your username and account login</li>
+            <li>Your email address</li>
+            <li>Your account settings and preferences</li>
+            <li>You can create new lists and items after clearing</li>
+        </ul>
+    </div>
+
+    <div class="action-section">
+        <h3>💾 Before You Clear...</h3>
+        <p style="margin-bottom: 1rem;">We strongly recommend exporting your data first. This gives you a complete backup in JSON format that you can keep as an archive.</p>
+        <a href="{{ url_for('export_all_user_data') }}" class="action-button action-button-primary">
+            <i class="fas fa-download"></i>
+            Export All Data First
+        </a>
+    </div>
+
+    <div class="clear-form">
+        <h3 style="color: #b45309; margin-bottom: 1rem;">🔐 Confirm Data Clearing</h3>
+        <p style="color: #92400e; margin-bottom: 1.5rem;">To clear all your data, please enter your password and confirm your action.</p>
+
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="form-group">
+                <label for="password">Enter your password to confirm:</label>
+                <input type="password" id="password" name="password" required autofocus placeholder="Your password">
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="confirm_understanding" required>
+                    <span>I understand that this will permanently delete all my data (lists, items, groups, etc.)</span>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="confirm_irreversible" required>
+                    <span>I understand this action cannot be undone</span>
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
+                <button type="submit" class="action-button action-button-warning" onclick="return confirm('Are you absolutely sure you want to clear all your data? This cannot be undone.');">
+                    <i class="fas fa-broom"></i>
+                    Yes, Clear All Data
+                </button>
+                <a href="{{ url_for('data_management') }}" class="action-button action-button-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div style="margin-top: 2rem; padding: 1rem; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">
+        <p style="margin: 0; color: #1f2937; font-size: 0.9rem;">
+            <i class="fas fa-info-circle" style="margin-right: 0.5rem;"></i>
+            <strong>Note:</strong> If you want to delete your account entirely (instead of just the data), visit the GDPR section in the Data Management page.
+        </p>
+    </div>
+</div>
+{% endblock %}

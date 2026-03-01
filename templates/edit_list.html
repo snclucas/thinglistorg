@@ -171,8 +171,8 @@
 
         <div class="button-group">
             <button type="submit">Save Changes</button>
-            <a href="{{ url_for('share_list', list_id=list.id) }}" class="btn-cancel" style="background: #10b981; color: white;">Share</a>
-            <a href="{{ url_for('view_list', list_id=list.id) }}" class="btn-cancel">Cancel</a>
+            <a href="{{ url_for('list_item.share_list', list_id=list.slug) }}" class="btn-cancel" style="background: #10b981; color: white;">Share</a>
+            <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="btn-cancel">Cancel</a>
         </div>
     </form>
 </div>

@@ -388,12 +388,12 @@
 <div class="settings-container modern-animate-in">
     <!-- Breadcrumb -->
     <div class="modern-breadcrumb">
-        <a href="{{ url_for('lists') }}">
+        <a href="{{ url_for('list_item.lists') }}">
             <i class="fas fa-list"></i>
             My Lists
         </a>
         <span> / </span>
-        <a href="{{ url_for('view_list', list_id=list.id) }}">{{ list.name }}</a>
+        <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}">{{ list.name }}</a>
         <span> / </span>
         <span style="color: var(--gray-600);">Settings</span>
     </div>
@@ -421,7 +421,7 @@
     </div>
 
     <!-- Field Settings Form -->
-    <form method="POST" action="{{ url_for('list_settings', list_id=list.id) }}">
+    <form method="POST" action="{{ url_for('list_item.list_settings', list_id=list.slug) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="settings-card">
             <h2 class="settings-card-title">
@@ -495,7 +495,7 @@
                 <i class="fas fa-check"></i>
                 Save Settings
             </button>
-            <a href="{{ url_for('view_list', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
+            <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="modern-btn modern-btn-secondary">
                 <i class="fas fa-times"></i>
                 Cancel
             </a>
@@ -537,22 +537,22 @@
                     </div>
                 </div>
                 <div class="custom-field-actions">
-                    <a href="{{ url_for('edit_custom_field_name', list_id=list.id, field_id=field.id) }}" class="custom-field-btn custom-field-btn-edit" title="Edit field name">
+                    <a href="{{ url_for('list_item.edit_custom_field_name', list_id=list.slug, field_id=field.id) }}" class="custom-field-btn custom-field-btn-edit" title="Edit field name">
                         ✏️ Edit
                     </a>
-                    <form method="POST" action="{{ url_for('toggle_custom_field_visibility', list_id=list.id, field_id=field.id) }}" style="display: inline;">
+                    <form method="POST" action="{{ url_for('list_item.toggle_custom_field_visibility', list_id=list.slug, field_id=field.id) }}" style="display: inline;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="custom-field-btn custom-field-btn-visibility" title="Toggle visibility">
                             {% if field.is_visible %}👁️ Hide{% else %}👁️‍🗨️ Show{% endif %}
                         </button>
                     </form>
-                    <form method="POST" action="{{ url_for('toggle_custom_field_editable', list_id=list.id, field_id=field.id) }}" style="display: inline;">
+                    <form method="POST" action="{{ url_for('list_item.toggle_custom_field_editable', list_id=list.slug, field_id=field.id) }}" style="display: inline;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="custom-field-btn custom-field-btn-editable" title="Toggle editability">
                             {% if field.is_editable %}✏️ Lock{% else %}🔒 Unlock{% endif %}
                         </button>
                     </form>
-                    <form method="POST" action="{{ url_for('delete_custom_field', list_id=list.id, field_id=field.id) }}" style="display: inline;" onsubmit="return confirm('Delete field &quot;{{ field.name }}&quot;? This will also delete all values for this field.');">
+                    <form method="POST" action="{{ url_for('list_item.delete_custom_field', list_id=list.slug, field_id=field.id) }}" style="display: inline;" onsubmit="return confirm('Delete field &quot;{{ field.name }}&quot;? This will also delete all values for this field.');">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="custom-field-btn custom-field-btn-delete" title="Delete field">
                             🗑️ Delete
@@ -574,7 +574,7 @@
             Add Custom Field
         </h2>
 
-        <form method="POST" action="{{ url_for('add_custom_field', list_id=list.id) }}" class="add-custom-field-form">
+        <form method="POST" action="{{ url_for('list_item.add_custom_field', list_id=list.slug) }}" class="add-custom-field-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="grid-2-cols">
                 <div class="form-group">

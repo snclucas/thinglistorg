@@ -75,7 +75,7 @@
                     {% for group in owned_groups %}
                     <tr class="group-owned-row">
                         <td data-label="Name" class="group-name-cell">
-                            <a href="{{ url_for('view_group', group_id=group.id) }}" class="group-name-link">
+                            <a href="{{ url_for('view_group', group_id=group.slug) }}" class="group-name-link">
                                 <i class="fas fa-users"></i>
                                 {{ group.name }}
                             </a>
@@ -104,7 +104,7 @@
                     {% for group in member_groups %}
                     <tr>
                         <td data-label="Name" class="group-name-cell">
-                            <a href="{{ url_for('view_group', group_id=group.id) }}" class="group-name-link">
+                            <a href="{{ url_for('view_group', group_id=group.slug) }}" class="group-name-link">
                                 <i class="fas fa-users"></i>
                                 {{ group.name }}
                             </a>

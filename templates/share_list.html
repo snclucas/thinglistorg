@@ -219,7 +219,7 @@
     <h1>🔗 Share List: {{ list.name }}</h1>
 
     <!-- Share with new user form -->
-    <form method="POST" action="{{ url_for('share_list', list_id=list.id) }}">
+    <form method="POST" action="{{ url_for('list_item.share_list', list_id=list.slug) }}">
         <input type="hidden" name="action" value="add">
 
         <div class="form-group">
@@ -240,7 +240,7 @@
 
         <div class="button-group">
             <button type="submit">Share List</button>
-            <a href="{{ url_for('view_list', list_id=list.id) }}" class="btn-cancel">Back</a>
+            <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="btn-cancel">Back</a>
         </div>
     </form>
 
@@ -264,7 +264,7 @@
                         </div>
                     </div>
                     <div class="user-actions">
-                        <form method="POST" action="{{ url_for('share_list', list_id=list.id) }}"
+                        <form method="POST" action="{{ url_for('list_item.share_list', list_id=list.slug) }}"
                             style="display: flex; gap: 0.5rem;">
                             <input type="hidden" name="action" value="update_permission">
                             <input type="hidden" name="user_id" value="{{ user.id }}">
@@ -275,7 +275,7 @@
                             </select>
                             <button type="submit" class="btn-update">Update</button>
                         </form>
-                        <form method="POST" action="{{ url_for('share_list', list_id=list.id) }}"
+                        <form method="POST" action="{{ url_for('list_item.share_list', list_id=list.slug) }}"
                             style="display: inline;">
                             <input type="hidden" name="action" value="remove">
                             <input type="hidden" name="user_id" value="{{ user.id }}">

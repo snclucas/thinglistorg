@@ -254,7 +254,7 @@
 
         <!-- Buttons -->
         <div class="button-group">
-            <a href="{{ url_for('view_list', list_id=list.id) }}" class="btn btn-secondary">
+            <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="btn btn-secondary">
                 <i class="fas fa-times"></i> Cancel
             </a>
             <button type="submit" class="btn btn-primary">

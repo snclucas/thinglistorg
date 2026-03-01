@@ -37,6 +37,22 @@
                     <i class="fas fa-calendar"></i>
                     Created {{ group.created_at.strftime('%b %d, %Y') }}
                 </span>
+                <span class="meta-badge">
+                    <i class="fas fa-users"></i>
+                    {{ group.members|length }} Member{{ 's' if group.members|length != 1 else '' }}
+                </span>
+                <span class="meta-badge">
+                    <i class="fas fa-list"></i>
+                    {{ group.lists|length }} List{{ 's' if group.lists|length != 1 else '' }}
+                </span>
+                <span class="meta-badge">
+                    <i class="fas fa-box"></i>
+                    {% set total_items = namespace(count=0) %}
+                    {% for list in group.lists %}
+                        {% set total_items.count = total_items.count + list.items|length %}
+                    {% endfor %}
+                    {{ total_items.count }} Item{{ 's' if total_items.count != 1 else '' }}
+                </span>
             </div>
         </div>
         {% if is_owner %}
@@ -45,7 +61,7 @@
                 <i class="fas fa-circle-question"></i>
                 Help
             </button>
-            <a href="{{ url_for('edit_group', group_id=group.id) }}" class="modern-btn modern-btn-secondary modern-btn-sm">
+            <a href="{{ url_for('edit_group', group_id=group.slug or group.id) }}" class="modern-btn modern-btn-secondary modern-btn-sm">
                 <i class="fas fa-edit"></i>
                 Edit
             </a>
@@ -60,27 +76,7 @@
         {% endif %}
     </div>
 
-    <!-- Statistics Bar -->
-    <div class="stats-bar">
-        <div class="stat-box">
-            <div class="stat-value">{{ group.members|length }}</div>
-            <div class="stat-label">Members</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-value">{{ group.lists|length }}</div>
-            <div class="stat-label">Lists</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-value">
-                {% set total_items = namespace(count=0) %}
-                {% for list in group.lists %}
-                    {% set total_items.count = total_items.count + list.items|length %}
-                {% endfor %}
-                {{ total_items.count }}
-            </div>
-            <div class="stat-label">Total Items</div>
-        </div>
-    </div>
+
 
     <!-- Navigation Tabs -->
     <div class="modern-tabs">
@@ -112,7 +108,7 @@
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <span class="section-badge">{{ lists|length }}</span>
                     {% if is_admin %}
-                    <a href="{{ url_for('create_list', group_id=group.id) }}" class="modern-btn modern-btn-sm modern-btn-primary">
+                    <a href="{{ url_for('list_item.create_list', group_id=group.slug or group.id) }}" class="modern-btn modern-btn-sm modern-btn-primary">
                         <i class="fas fa-plus"></i>
                         Create List
                     </a>
@@ -133,7 +129,7 @@
                         {% for list in lists %}
                         <tr>
                             <td data-label="Name" class="list-name-cell">
-                                <a href="{{ url_for('view_list', list_id=list.id) }}" class="list-name-link">
+                                <a href="{{ url_for('list_item.view_list', list_id=list.slug or list.id) }}" class="list-name-link">
                                     <i class="fas fa-list"></i>
                                     {{ list.name }}
                                 </a>
@@ -149,12 +145,12 @@
                                 {{ list.items|length }}
                             </td>
                             <td style="text-align: right;">
-                                <a href="{{ url_for('view_list', list_id=list.id) }}" class="modern-btn modern-btn-xs modern-btn-secondary" title="View">
+                                <a href="{{ url_for('list_item.view_list', list_id=list.slug or list.id) }}" class="modern-btn modern-btn-xs modern-btn-secondary" title="View">
                                     <i class="fas fa-eye"></i>
                                     View
                                 </a>
                                 {% if current_user.id == group.owner_id or group.is_admin(current_user.id) %}
-                                <a href="{{ url_for('edit_list', list_id=list.id) }}" class="modern-btn modern-btn-xs modern-btn-secondary" title="Edit">
+                                <a href="{{ url_for('list_item.edit_list', list_id=list.slug or list.id) }}" class="modern-btn modern-btn-xs modern-btn-secondary" title="Edit">
                                     <i class="fas fa-edit"></i>
                                     Edit
                                 </a>
@@ -171,7 +167,7 @@
                 <h2 class="empty-title">No lists yet</h2>
                 <p class="empty-description">This group doesn't have any lists. Create one to get started.</p>
                 {% if is_admin %}
-                <a href="{{ url_for('create_list', group_id=group.id) }}" class="modern-btn modern-btn-primary" style="margin-top: 2rem;">
+                <a href="{{ url_for('list_item.create_list', group_id=group.slug or group.id) }}" class="modern-btn modern-btn-primary" style="margin-top: 2rem;">
                     <i class="fas fa-plus"></i>
                     Create List
                 </a>
@@ -184,7 +180,7 @@
         <div class="tab-panel" data-tab="members">
             {% if is_admin %}
             <div style="margin-bottom: 1.5rem;">
-                <a href="{{ url_for('add_group_member', group_id=group.id) }}" class="modern-btn modern-btn-success">
+                <a href="{{ url_for('add_group_member', group_id=group.slug or group.id) }}" class="modern-btn modern-btn-success">
                     <i class="fas fa-plus"></i>
                     Add Member
                 </a>
@@ -231,7 +227,7 @@
                             <td data-label="Joined" class="text-muted">{{ member.joined_at.strftime('%b %d, %Y') }}</td>
                             {% if is_admin and not group.is_owner(member.user_id) %}
                             <td style="text-align: right;">
-                                <a href="{{ url_for('edit_group_member', group_id=group.id, user_id=member.user_id) }}" class="modern-btn modern-btn-xs modern-btn-secondary" title="Edit">
+                                <a href="{{ url_for('edit_group_member', group_id=group.slug or group.id, user_id=member.user_id) }}" class="modern-btn modern-btn-xs modern-btn-secondary" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <button type="button" class="modern-btn modern-btn-xs modern-btn-danger" data-bs-toggle="modal" data-bs-target="#removeMemberModal{{ member.user_id }}" title="Remove">
@@ -276,7 +272,7 @@
                 </div>
             </div>
             <div style="margin-top: 1.5rem;">
-                <a href="{{ url_for('edit_group', group_id=group.id) }}" class="modern-btn modern-btn-primary">
+                <a href="{{ url_for('edit_group', group_id=group.slug or group.id) }}" class="modern-btn modern-btn-primary">
                     <i class="fas fa-edit"></i>
                     Edit Settings
                 </a>
@@ -314,7 +310,7 @@
                                         <button type="button" class="modern-btn modern-btn-secondary" style="flex: 1;" onclick="document.getElementById('delete-group-confirm').style.display = 'none'; document.querySelector('[data-target=\"delete-group-confirm\"]').classList.remove('open');">
                                             Cancel
                                         </button>
-                                        <form method="POST" action="{{ url_for('delete_group', group_id=group.id) }}" style="flex: 1;">
+                                        <form method="POST" action="{{ url_for('delete_group', group_id=group.slug or group.id) }}" style="flex: 1;">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                             <button type="submit" class="modern-btn modern-btn-danger" style="width: 100%;">
                                                 <i class="fas fa-trash" style="margin-right: 0.5rem;"></i>

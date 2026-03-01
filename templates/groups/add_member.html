@@ -67,7 +67,7 @@
             <!-- Form Actions -->
             <div class="form-actions">
                 {{ form.submit(class="modern-btn modern-btn-success modern-btn-lg") }}
-                <a href="{{ url_for('view_group', group_id=group.id) }}" class="modern-btn modern-btn-secondary modern-btn-lg">Cancel</a>
+                <a href="{{ url_for('view_group', group_id=group.slug) }}" class="modern-btn modern-btn-secondary modern-btn-lg">Cancel</a>
             </div>
         </form>
     </div>

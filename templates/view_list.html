@@ -22,8 +22,8 @@
     <!-- Breadcrumb -->
     <div class="modern-breadcrumb">
         {% if current_user.is_authenticated %}
-            <a href="{{ url_for('lists') }}"><i class="fas fa-list"></i> My Lists</a>
-        {% else %}
+            <a href="{{ url_for('list_item.lists') }}"><i class="fas fa-list"></i> My Lists</a>
+        {% else%}
             <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
         {% endif %}
         <span> / </span>
@@ -35,31 +35,31 @@
         <div class="list-header-content" style="display: flex; flex-direction: column; gap: 1rem;">
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                 {% if current_user.is_authenticated and list.user_id == current_user.id %}
-                    <a href="{{ url_for('edit_list', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
+                    <a href="{{ url_for('list_item.edit_list', list_id=list.slug) }}" class="modern-btn modern-btn-secondary">
                         <i class="fas fa-pen"></i>
                         Edit List
                     </a>
-                    <a href="{{ url_for('share_list', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
+                    <a href="{{ url_for('list_item.share_list', list_id=list.slug) }}" class="modern-btn modern-btn-secondary">
                         <i class="fas fa-share-alt"></i>
                         Share
                     </a>
-                    <a href="{{ url_for('list_settings', list_id=list.id) }}" class="modern-btn modern-btn-secondary">
+                    <a href="{{ url_for('list_item.list_settings', list_id=list.slug) }}" class="modern-btn modern-btn-secondary">
                         <i class="fas fa-cog"></i>
                         Settings
                     </a>
-                    <a href="{{ url_for('export_items', list_id=list.id, format='json') }}" class="modern-btn modern-btn-secondary" title="Export as JSON">
+                    <a href="{{ url_for('list_item.export_items', list_id=list.slug, format='json') }}" class="modern-btn modern-btn-secondary" title="Export as JSON">
                         <i class="fas fa-download"></i>
                         Export (JSON)
                     </a>
-                    <a href="{{ url_for('export_items', list_id=list.id, format='csv') }}" class="modern-btn modern-btn-secondary" title="Export as CSV">
+                    <a href="{{ url_for('list_item.export_items', list_id=list.slug, format='csv') }}" class="modern-btn modern-btn-secondary" title="Export as CSV">
                         <i class="fas fa-download"></i>
                         Export (CSV)
                     </a>
-                    <a href="{{ url_for('import_items', list_id=list.id) }}" class="modern-btn modern-btn-secondary" title="Import items">
+                    <a href="{{ url_for('list_item.import_items', list_id=list.slug) }}" class="modern-btn modern-btn-secondary" title="Import items">
                         <i class="fas fa-upload"></i>
                         Import
                     </a>
-                    <form method="POST" action="{{ url_for('delete_list', list_id=list.id) }}" style="display: inline;">
+                    <form method="POST" action="{{ url_for('list_item.delete_list', list_id=list.slug) }}" style="display: inline;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="modern-btn modern-btn-danger" onclick="return confirm('Delete this list and all its items? This cannot be undone.');">
                             <i class="fas fa-trash"></i>
@@ -105,7 +105,7 @@
     <div class="items-section-card">
         <div class="items-section-header">
             {% if can_edit %}
-            <a href="{{ url_for('create_item', list_id=list.id) }}" class="modern-btn modern-btn-primary">
+            <a href="{{ url_for('list_item.create_item', list_id=list.slug) }}" class="modern-btn modern-btn-primary">
                 <i class="fas fa-plus"></i>
                 Add Item
             </a>
@@ -160,7 +160,7 @@
                     {% for item in items %}
                     <tr>
                         <td data-label="Name" class="item-name-cell">
-                            <a href="{{ url_for('view_item', item_id=item.id) }}" class="item-name-link">
+                            <a href="{{ url_for('list_item.view_item', item_id=item.slug) }}" class="item-name-link">
                                 {{ item.name }}
                             </a>
                         </td>
@@ -199,8 +199,8 @@
                         <td data-label="Actions">
                             <div class="item-actions-cell">
                                 {% if can_edit %}
-                                    <a href="{{ url_for('edit_item', item_id=item.id) }}" class="item-action-btn item-btn-edit">Edit</a>
-                                    <form method="POST" action="{{ url_for('delete_item', item_id=item.id) }}" style="display: inline;">
+                                    <a href="{{ url_for('list_item.edit_item', item_id=item.slug) }}" class="item-action-btn item-btn-edit">Edit</a>
+                                    <form method="POST" action="{{ url_for('list_item.delete_item', item_id=item.slug) }}" style="display: inline;">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <button type="submit" class="item-action-btn item-btn-delete" onclick="return confirm('Delete this item?');">Delete</button>
                                     </form>
@@ -219,7 +219,7 @@
             <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 2rem; flex-wrap: wrap; padding: 1.5rem 0;">
                 <!-- Previous Button -->
                 {% if page > 1 %}
-                    <a href="{{ url_for('view_list', list_id=list.id, page=page-1, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn pagination-btn-enabled">
+                    <a href="{{ url_for('list_item.view_list', list_id=list.slug, page=page-1, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn pagination-btn-enabled">
                         <i class="fas fa-chevron-left"></i>
                         Previous
                     </a>
@@ -235,7 +235,7 @@
                 {% set end_page = [pages, page + 2] | min %}
 
                 {% if start_page > 1 %}
-                    <a href="{{ url_for('view_list', list_id=list.id, page=1, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn">
+                    <a href="{{ url_for('list_item.view_list', list_id=list.slug, page=1, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn">
                         1
                     </a>
                     {% if start_page > 2 %}
@@ -247,7 +247,7 @@
                     {% if p == page %}
                         <button class="pagination-btn pagination-btn-active" disabled>{{ p }}</button>
                     {% else %}
-                        <a href="{{ url_for('view_list', list_id=list.id, page=p, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn">
+                        <a href="{{ url_for('list_item.view_list', list_id=list.slug, page=p, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn">
                             {{ p }}
                         </a>
                     {% endif %}
@@ -257,14 +257,14 @@
                     {% if end_page < pages - 1 %}
                         <span style="padding: 0.5rem; color: #6b7280;">...</span>
                     {% endif %}
-                    <a href="{{ url_for('view_list', list_id=list.id, page=pages, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn">
+                    <a href="{{ url_for('list_item.view_list', list_id=list.slug, page=pages, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn">
                         {{ pages }}
                     </a>
                 {% endif %}
 
                 <!-- Next Button -->
                 {% if page < pages %}
-                    <a href="{{ url_for('view_list', list_id=list.id, page=page+1, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn pagination-btn-enabled">
+                    <a href="{{ url_for('list_item.view_list', list_id=list.slug, page=page+1, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" class="pagination-btn pagination-btn-enabled">
                         Next
                         <i class="fas fa-chevron-right"></i>
                     </a>
@@ -284,7 +284,7 @@
             </div>
             <h3 class="empty-state-title">No items yet</h3>
             <p class="empty-state-text">Add your first item to this list</p>
-            <a href="{{ url_for('create_item', list_id=list.id) }}" class="modern-btn modern-btn-primary">
+            <a href="{{ url_for('list_item.create_item', list_id=list.slug) }}" class="modern-btn modern-btn-primary">
                 <i class="fas fa-plus"></i>
                 Add First Item
             </a>
@@ -294,7 +294,7 @@
 
     <div class="back-link-container">
         {% if current_user.is_authenticated %}
-            <a href="{{ url_for('lists') }}" class="back-link">
+            <a href="{{ url_for('list_item.lists') }}" class="back-link">
                 <i class="fas fa-arrow-left"></i>
                 <span>Back to Lists</span>
             </a>
