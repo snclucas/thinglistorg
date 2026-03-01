@@ -251,9 +251,9 @@
     {% if not current_user.is_authenticated %}
     <div class="login-prompt">
         <p><strong>Create your own lists!</strong> Sign in to start organizing your items.</p>
-        <a href="{{ url_for('login') }}">Sign In</a>
+        <a href="{{ url_for('auth.login') }}">Sign In</a>
         <span style="margin: 0 1rem;">or</span>
-        <a href="{{ url_for('register') }}" style="background: #4c5282;">Create Account</a>
+        <a href="{{ url_for('auth.register') }}" style="background: #4c5282;">Create Account</a>
     </div>
     {% endif %}
 
@@ -361,7 +361,7 @@
             {% if search_q %}
                 No lists match your search. Try searching for something different.
             {% else %}
-                There are no public lists yet. <a href="{{ url_for('register') }}" style="color: #667eea;">Create an account</a> to share your lists!
+                There are no public lists yet. <a href="{{ url_for('auth.register') }}" style="color: #667eea;">Create an account</a> to share your lists!
             {% endif %}
         </p>
     </div>
