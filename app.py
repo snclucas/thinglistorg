@@ -29,18 +29,16 @@ load_dotenv()
 app = Flask(__name__)
 
 # Configure logging to console
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler()  # Log to console
-    ]
-)
+# Clear any existing handlers first to prevent duplicates
+app.logger.handlers.clear()
 
-# Get logger for the app
+# Disable propagation to prevent messages from bubbling to root logger
+app.logger.propagate = False
+
+# Set logger level
 app.logger.setLevel(logging.INFO)
 
-# Add console handler to app logger
+# Add single console handler to app logger
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
@@ -52,6 +50,10 @@ app.logger.info(f'Flask application starting in {os.environ.get("FLASK_ENV", "de
 # Load configuration based on environment
 env = os.environ.get('FLASK_ENV', 'development')
 app.config.from_object(config[env])
+
+print("=============================================================================================")
+print(f'Configuration loaded for environment: {env}')
+print("=============================================================================================")
 
 # File upload settings
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
@@ -119,7 +121,7 @@ def set_security_headers(response):
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
         "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
-        "img-src 'self' data: https:; "
+        "img-src 'self' data: https: http://localhost; "
         "font-src 'self' https://cdnjs.cloudflare.com; "
         "connect-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
         "frame-ancestors 'none'; "
@@ -1634,6 +1636,8 @@ def clear_all_user_data():
                 
                 if item_ids_flat:
                     # Delete item relationships in order (respecting FK constraints)
+                    # Delete from item_tags junction table first
+                    db.session.execute(item_tags.delete().where(item_tags.c.item_id.in_(item_ids_flat)))
                     ItemImage.query.filter(ItemImage.item_id.in_(item_ids_flat)).delete()
                     ItemAttachment.query.filter(ItemAttachment.item_id.in_(item_ids_flat)).delete()
                     ItemCustomField.query.filter(ItemCustomField.item_id.in_(item_ids_flat)).delete()
@@ -1736,6 +1740,8 @@ def delete_account():
                 
                 if item_ids_flat:
                     # Delete item relationships in order (respecting FK constraints)
+                    # Delete from item_tags junction table first
+                    db.session.execute(item_tags.delete().where(item_tags.c.item_id.in_(item_ids_flat)))
                     ItemImage.query.filter(ItemImage.item_id.in_(item_ids_flat)).delete()
                     ItemAttachment.query.filter(ItemAttachment.item_id.in_(item_ids_flat)).delete()
                     ItemCustomField.query.filter(ItemCustomField.item_id.in_(item_ids_flat)).delete()
@@ -2209,3 +2215,15 @@ def import_all_user_data():
         flash(f'Import failed: {str(e)}', 'error')
 
     return redirect(url_for('profile'))
+
+if __name__ == '__main__':
+    print("\n" + "="*50)
+    print("ThingList - User Authentication System")
+    print("="*50)
+    print("\n✓ Starting development server...")
+    print("✓ Access the application at: http://localhost:5000")
+    print("✓ Press CTRL+C to stop the server")
+    print("\n" + "="*50 + "\n")
+
+    # Run the application
+    app.run(debug=True, host='127.0.0.1', port=5000)

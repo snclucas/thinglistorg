@@ -291,17 +291,26 @@ def public_lists():
 @login_required
 def create_list():
     """Create a new list"""
-    group_id = request.args.get('group_id', type=int)
+    group_id_param = request.args.get('group_id')
     group = None
 
-    if group_id:
-        group = Group.query.get_or_404(group_id)
+    if group_id_param:
+        # Try to get group by ID first (if it's a number), then by slug
+        try:
+            group_id_int = int(group_id_param)
+            group = Group.query.get(group_id_int)
+        except ValueError:
+            # If not an int, try to get by slug
+            group = Group.query.filter_by(slug=group_id_param).first()
+        
+        if not group:
+            abort(404)
         # Check if user has permission to create lists in this group
         if not group.is_admin(current_user.id) and not group.is_owner(current_user.id):
             # Check if members can create lists
             if not group.get_settings().get('allow_members_create_lists', True):
                 flash('You do not have permission to create lists in this group.', 'danger')
-                return redirect(url_for('group.view_group', group_id=group_id))
+                return redirect(url_for('group.view_group', group_id=group.slug or group.id))
 
     if request.method == 'POST':
         try:

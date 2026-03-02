@@ -103,6 +103,8 @@
 
     <!-- Items Section -->
     <div class="items-section-card">
+
+        {% if items %}
         <div class="items-section-header">
             {% if can_edit %}
             <a href="{{ url_for('list_item.create_item', list_id=list.slug) }}" class="modern-btn modern-btn-primary">
@@ -111,6 +113,7 @@
             </a>
             {% endif %}
         </div>
+        {% endif %}
 
         <!-- Pagination Controls -->
         {% if pages > 1 or total > 0 %}

@@ -218,8 +218,6 @@ class ListShare(db.Model):
 
     __table_args__ = (
         db.UniqueConstraint('list_id', 'user_id', name='uq_list_share_list_user'),
-        db.Index('ix_list_shares_user_id', 'user_id'),
-        db.Index('ix_list_shares_list_id', 'list_id'),
     )
 
     def __repr__(self):
@@ -296,7 +294,6 @@ class Group(db.Model):
     lists = db.relationship('List', backref='group', lazy=True, cascade='all, delete-orphan')
 
     __table_args__ = (
-        db.Index('ix_groups_owner_id', 'owner_id'),
         db.Index('ix_groups_created_at', 'created_at'),
     )
 
@@ -412,8 +409,6 @@ class GroupMember(db.Model):
 
     __table_args__ = (
         db.UniqueConstraint('group_id', 'user_id', name='uq_group_member_group_user'),
-        db.Index('ix_group_members_user_id', 'user_id'),
-        db.Index('ix_group_members_group_id', 'group_id'),
     )
 
     def __repr__(self):
@@ -520,7 +515,6 @@ class ItemImage(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (
-        db.Index('ix_item_images_item_id', 'item_id'),
         db.Index('ix_item_images_is_main', 'is_main'),
     )
 
@@ -882,7 +876,6 @@ class ListCustomField(db.Model):
 
     __table_args__ = (
         db.UniqueConstraint('list_id', 'name', name='uq_list_custom_field_name'),
-        db.Index('ix_list_custom_fields_list_id', 'list_id'),
     )
 
     def __repr__(self):
@@ -908,7 +901,6 @@ class ItemCustomField(db.Model):
 
     __table_args__ = (
         db.UniqueConstraint('item_id', 'field_id', name='uq_item_custom_field_item_field'),
-        db.Index('ix_item_custom_fields_item_id', 'item_id'),
     )
 
     def __repr__(self):

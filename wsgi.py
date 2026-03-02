@@ -18,5 +18,5 @@ if not app.debug:
     app.logger.setLevel(gunicorn_logger.level)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(use_reloader=False)
 

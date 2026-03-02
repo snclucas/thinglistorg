@@ -1,5 +1,9 @@
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# Load environment variables from .env file FIRST
+load_dotenv()
 
 
 class Config:
@@ -98,12 +102,33 @@ class ProductionConfig(Config):
 
 
 class TestingConfig(Config):
-    """Testing configuration"""
+    """Testing configuration - uses MySQL/MariaDB with test database"""
     DEBUG = True
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    WTF_CSRF_ENABLED = False
+    
+    # Build test database URI from same credentials but with test database name
+    _test_db_host = os.environ.get('DB_HOST_TEST', 'localhost')
+    _test_db_user = os.environ.get('DB_USER_TEST', '')
+    _test_db_password = os.environ.get('DB_PASSWORD_TEST', '')
+    _test_db_port = os.environ.get('DB_PORT_TEST', '3306')
+    _test_db_name = 'thinglistorg_test_db'  # Fixed test database name
+    
+    print("**************************************************************************************************************")
+
+    if os.environ.get('DATABASE_URL'):
+        # Strip database name from DATABASE_URL and replace with test database
+        base_url = os.environ.get('DATABASE_URL').rsplit('/', 1)[0]
+        SQLALCHEMY_DATABASE_URI = f'{base_url}/{_test_db_name}'
+    else:
+        # Build test database URI from same credentials as main config
+        SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{_test_db_user}:{_test_db_password}@{_test_db_host}:{_test_db_port}/{_test_db_name}'
+    
     SQLALCHEMY_ENGINE_OPTIONS = {
-        'poolclass': 'sqlalchemy.pool.StaticPool',
+        'pool_size': 5,
+        'pool_recycle': 3600,
+        'pool_pre_ping': True,
+        'echo': False,
     }
 
 
