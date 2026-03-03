@@ -36,6 +36,7 @@
                                 <i class="fas fa-edit"></i> Edit
                             </a>
                             <form method="POST" action="{{ url_for('delete_location', location_id=location.id) }}" class="delete-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <button type="submit" class="btn-icon btn-delete" title="Delete" onclick="return confirm('Are you sure? Items will no longer have this location assigned.');">
                                     <i class="fas fa-trash"></i> Delete
                                 </button>
@@ -124,6 +125,17 @@
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+    align-items: center;
+}
+
+.action-buttons form {
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+
+.action-buttons .btn-icon {
+    margin: 0;
 }
 
 .btn-icon {
@@ -156,10 +168,6 @@
 
 .btn-delete:hover {
     background: #fecaca;
-}
-
-.delete-form {
-    display: inline;
 }
 
 .empty-state {
