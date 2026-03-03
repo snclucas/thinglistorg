@@ -15,10 +15,143 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='view-list.css') }}">
+<style>
+    .item-checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: var(--blue-600);
+    }
+
+    .items-section-header {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .bulk-delete-btn {
+        padding: 0.625rem 1rem;
+        background-color: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: background-color 0.2s;
+    }
+
+    .bulk-delete-btn:hover:not(:disabled) {
+        background-color: #dc2626;
+    }
+
+    .bulk-delete-btn:disabled {
+        background-color: #d1d5db;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal-box {
+        background-color: white;
+        border-radius: 8px;
+        padding: 2rem;
+        max-width: 400px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        z-index: 10001;
+    }
+
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--gray-900);
+    }
+
+    .modal-message {
+        color: var(--gray-600);
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    .modal-btn {
+        padding: 0.625rem 1.25rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: background-color 0.2s;
+    }
+
+    .modal-btn-cancel {
+        background-color: var(--gray-200);
+        color: var(--gray-900);
+    }
+
+    .modal-btn-cancel:hover {
+        background-color: var(--gray-300);
+    }
+
+    .modal-btn-confirm {
+        background-color: #ef4444;
+        color: white;
+    }
+
+    .modal-btn-confirm:hover {
+        background-color: #dc2626;
+    }
+
+    .clear-filters-btn {
+        padding: 0.625rem 1rem;
+        background-color: var(--gray-300);
+        color: var(--gray-700);
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: background-color 0.2s;
+    }
+
+    .clear-filters-btn:hover {
+        background-color: var(--gray-400);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="list-view-container modern-animate-in">
+    <!-- Hidden CSRF Token -->
+    <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
+    
     <!-- Breadcrumb -->
     <div class="modern-breadcrumb">
         {% if current_user.is_authenticated %}
@@ -84,11 +217,6 @@
                 {% endif %}
 
                 <div class="list-meta-row">
-                    <div class="list-meta-item">
-                        <i class="fas fa-box list-meta-icon"></i>
-                        <span><span class="list-meta-value">{{ items|length }}</span> items</span>
-                    </div>
-
                     {% if list.get_tags_list() %}
                     <div class="list-tags-inline" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
                         {% for tag in list.get_tags_list() %}
@@ -110,6 +238,17 @@
             <a href="{{ url_for('list_item.create_item', list_id=list.slug) }}" class="modern-btn modern-btn-primary">
                 <i class="fas fa-plus"></i>
                 Add Item
+            </a>
+            <button id="bulk-delete-btn" class="bulk-delete-btn" disabled>
+                <i class="fas fa-trash"></i>
+                Delete Selected
+            </button>
+            <span id="selection-count" style="color: var(--gray-500); font-size: 0.9rem;"></span>
+            {% endif %}
+            {% if filters.q or filters.tag or filters.type or filters.location or filters.low_stock %}
+            <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="clear-filters-btn">
+                <i class="fas fa-times"></i>
+                Clear Filters
             </a>
             {% endif %}
         </div>
@@ -151,20 +290,23 @@
             <table class="modern-items-table">
                 <thead>
                     <tr>
+                        <th style="width: 40px;"><input type="checkbox" id="select-all" class="item-checkbox"></th>
                         <th>Name</th>
                         {% if list.is_field_visible('description') %}<th>Description</th>{% endif %}
                         {% if list.is_field_visible('item_type') %}<th>Type</th>{% endif %}
                         {% if list.is_field_visible('location') %}<th>Location</th>{% endif %}
-                        {% if list.is_field_visible('quantity') %}<th>Quantity</th>{% endif %}
-                        <th style="text-align: right;">Actions</th>
+                        {% if list.is_field_visible('quantity') %}<th>Tags</th>{% endif %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in items %}
                     <tr>
+                        <td style="width: 40px;">
+                            <input type="checkbox" class="item-checkbox item-select" data-item-id="{{ item.slug }}" data-item-name="{{ item.name }}">
+                        </td>
                         <td data-label="Name" class="item-name-cell">
                             <a href="{{ url_for('list_item.view_item', item_id=item.slug) }}" class="item-name-link">
-                                {{ item.name }}
+                                {{ item.name }}{% if list.is_field_visible('quantity') %} <span style="color: var(--gray-500); font-weight: normal;">({{ item.quantity }})</span>{% endif %}
                             </a>
                         </td>
                         {% if list.is_field_visible('description') %}
@@ -179,7 +321,9 @@
                         {% if list.is_field_visible('item_type') %}
                         <td data-label="Type" class="item-meta-cell">
                             {% if item.item_type %}
-                                <span class="modern-badge modern-badge-primary">{{ item.item_type.name }}</span>
+                                <a href="{{ url_for('list_item.view_list', list_id=list.slug, page=1, per_page=per_page, q=filters.q, tag=filters.tag, type=item.item_type.name, location=filters.location, low_stock=filters.low_stock) }}" style="text-decoration: none;">
+                                    <span class="modern-badge modern-badge-primary" style="cursor: pointer;">{{ item.item_type.name }}</span>
+                                </a>
                             {% else %}
                                 <span style="color: var(--gray-400);">—</span>
                             {% endif %}
@@ -188,30 +332,28 @@
                         {% if list.is_field_visible('location') %}
                         <td data-label="Location" class="item-meta-cell">
                             {% if item.location_obj or item.location %}
-                                <i class="fas fa-map-pin"></i> {{ item.location_obj.name if item.location_obj else item.location }}
+                                <a href="{{ url_for('list_item.view_list', list_id=list.slug, page=1, per_page=per_page, q=filters.q, tag=filters.tag, type=filters.type, location=item.location_obj.name if item.location_obj else item.location, low_stock=filters.low_stock) }}" style="color: var(--blue-600); text-decoration: none; cursor: pointer;">
+                                    {{ item.location_obj.name if item.location_obj else item.location }}
+                                </a>
                             {% else %}
                                 <span style="color: var(--gray-400);">—</span>
                             {% endif %}
                         </td>
                         {% endif %}
                         {% if list.is_field_visible('quantity') %}
-                        <td data-label="Quantity">
-                            <span class="item-quantity-badge">{{ item.quantity }}</span>
+                        <td data-label="Tags">
+                            {% if item.get_tags_list() %}
+                                {% for tag_item in item.get_tags_list() %}
+                                    <a href="{{ url_for('list_item.view_list', list_id=list.slug, page=1, per_page=per_page, q=filters.q, tag=tag_item, type=filters.type, location=filters.location, low_stock=filters.low_stock) }}" style="color: var(--blue-600); text-decoration: none; cursor: pointer; margin-right: 0.5rem;">
+                                        {{ tag_item }}
+                                    </a>
+                                    {% if not loop.last %}<span style="color: var(--gray-400);">·</span>{% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span style="color: var(--gray-400);">—</span>
+                            {% endif %}
                         </td>
                         {% endif %}
-                        <td data-label="Actions">
-                            <div class="item-actions-cell">
-                                {% if can_edit %}
-                                    <a href="{{ url_for('list_item.edit_item', item_id=item.slug) }}" class="item-action-btn item-btn-edit">Edit</a>
-                                    <form method="POST" action="{{ url_for('list_item.delete_item', item_id=item.slug) }}" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                        <button type="submit" class="item-action-btn item-btn-delete" onclick="return confirm('Delete this item?');">Delete</button>
-                                    </form>
-                                {% else %}
-                                    <span style="color: var(--gray-400); font-size: 0.9rem;">Read-only</span>
-                                {% endif %}
-                            </div>
-                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -309,5 +451,144 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div id="delete-modal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-title">
+            <i class="fas fa-exclamation-triangle" style="color: #ef4444; margin-right: 0.5rem;"></i>
+            Delete Items
+        </div>
+        <div class="modal-message" id="delete-message"></div>
+        <div class="modal-actions">
+            <button id="cancel-delete-btn" class="modal-btn modal-btn-cancel">Cancel</button>
+            <button id="confirm-delete-btn" class="modal-btn modal-btn-confirm">Delete</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Bulk delete functionality
+const deleteBtn = document.getElementById('bulk-delete-btn');
+const selectAllCheckbox = document.getElementById('select-all');
+const itemCheckboxes = document.querySelectorAll('.item-select');
+const selectionCount = document.getElementById('selection-count');
+
+function updateDeleteState() {
+    const selectedCount = document.querySelectorAll('.item-select:checked').length;
+    const itemCount = document.querySelectorAll('.item-select').length;
+    
+    if (selectedCount > 0) {
+        deleteBtn.disabled = false;
+        selectionCount.textContent = `(${selectedCount} of ${itemCount} selected)`;
+    } else {
+        deleteBtn.disabled = true;
+        selectionCount.textContent = '';
+    }
+    
+    // Update select-all checkbox state
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = selectedCount === itemCount && itemCount > 0;
+        selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < itemCount;
+    }
+}
+
+// Item checkbox change event
+itemCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', updateDeleteState);
+});
+
+// Select all checkbox
+if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', function() {
+        itemCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateDeleteState();
+    });
+}
+
+// Bulk delete button click
+deleteBtn.addEventListener('click', function() {
+    const selectedItems = Array.from(document.querySelectorAll('.item-select:checked')).map(cb => ({
+        id: cb.dataset.itemId,
+        name: cb.dataset.itemName
+    }));
+    
+    if (selectedItems.length === 0) return;
+    
+    // Show modal
+    const itemList = selectedItems.map(item => `<li>${item.name}</li>`).join('');
+    showDeleteModal(selectedItems, itemList);
+});
+
+function showDeleteModal(selectedItems, itemList) {
+    const modal = document.getElementById('delete-modal');
+    const messageDiv = document.getElementById('delete-message');
+    const confirmBtn = document.getElementById('confirm-delete-btn');
+    
+    messageDiv.innerHTML = `Delete ${selectedItems.length} item${selectedItems.length !== 1 ? 's' : ''}?<br><br><ul style="margin: 0; padding-left: 1.5rem;">${itemList}</ul>`;
+    modal.classList.add('active');
+    
+    confirmBtn.onclick = function() {
+        performBulkDelete(selectedItems);
+    };
+}
+
+function performBulkDelete(selectedItems) {
+    const csrfToken = document.getElementById('csrf_token')?.value || '';
+    
+    // Send delete requests
+    Promise.all(selectedItems.map(item => 
+        fetch(`/items/${item.id}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        })
+    )).then(responses => {
+        // Check if all succeeded (200 or 302 redirect)
+        const allGood = responses.every(r => r.status >= 200 && r.status < 400);
+        if (allGood) {
+            // Use a small delay to ensure deletions are processed
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        } else {
+            alert('Error deleting some items. Please try again.');
+            closeDeleteModal();
+        }
+    }).catch(error => {
+        console.error('Delete error:', error);
+        alert('Error deleting items');
+        closeDeleteModal();
+    });
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('delete-modal');
+    modal.classList.remove('active');
+}
+
+// Modal close button
+const closeBtn = document.getElementById('cancel-delete-btn');
+if (closeBtn) {
+    closeBtn.addEventListener('click', closeDeleteModal);
+}
+
+// Close modal when clicking outside
+const modal = document.getElementById('delete-modal');
+if (modal) {
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeDeleteModal();
+        }
+    });
+}
+</script>
 {% endblock %}
 

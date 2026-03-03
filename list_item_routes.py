@@ -44,6 +44,33 @@ def _parse_tags(raw_tags):
     return [t.strip() for t in (raw_tags or '').split(',') if t.strip()]
 
 
+def _sanitize_text(text):
+    """Remove problematic Unicode characters that may not be supported by the database.
+    
+    Keeps ASCII and Latin-1 Supplement (0-384) which includes accented characters like é, ñ, ü.
+    Removes rare Unicode characters like Greek letters.
+    """
+    if not text:
+        return text
+    
+    # Only keep ASCII (0-127) and Latin Extended characters (up to 384)
+    # This includes accented characters but removes Greek and other symbols
+    result = []
+    for char in text:
+        if ord(char) < 384:  # ASCII + Latin-1 Supplement + Latin Extended-A
+            result.append(char)
+        else:
+            # Replace problematic characters with space
+            result.append(' ')
+    
+    sanitized = ''.join(result)
+    
+    # Clean up multiple spaces
+    sanitized = ' '.join(sanitized.split())
+    
+    return sanitized
+
+
 def _log_action(action, entity, entity_id, meta=None):
     """Log an action to the audit log."""
     try:
@@ -182,7 +209,9 @@ def _build_item_query(list_id, args):
     if item_type:
         query = query.filter(Item.item_type.has(ItemType.name == item_type))
     if location:
-        query = query.filter(Item.location.ilike(f'%{location}%'))
+        query = query.filter(
+            Item.location_obj.has(Location.name == location)
+        )
     if low_stock:
         query = query.filter(Item.low_stock_threshold > 0, Item.quantity <= Item.low_stock_threshold)
     if min_qty.isdigit():
@@ -314,9 +343,9 @@ def create_list():
 
     if request.method == 'POST':
         try:
-            name = request.form.get('name', '').strip()
-            description = request.form.get('description', '').strip()
-            tags = request.form.get('tags', '').strip()
+            name = _sanitize_text(request.form.get('name', '').strip())
+            description = _sanitize_text(request.form.get('description', '').strip())
+            tags = _sanitize_text(request.form.get('tags', '').strip())
             visibility = request.form.get('visibility', 'private').strip()
             group_id_form = request.form.get('group_id', type=int)
 
@@ -450,9 +479,9 @@ def edit_list(list_id):
 
     if request.method == 'POST':
         try:
-            user_list.name = request.form.get('name', '').strip()
-            user_list.description = request.form.get('description', '').strip()
-            user_list.tags = request.form.get('tags', '').strip()
+            user_list.name = _sanitize_text(request.form.get('name', '').strip())
+            user_list.description = _sanitize_text(request.form.get('description', '').strip())
+            user_list.tags = _sanitize_text(request.form.get('tags', '').strip())
             visibility = request.form.get('visibility', 'private').strip()
 
             # Validate visibility value
@@ -1007,6 +1036,16 @@ def create_item(list_id):
             low_stock_threshold = request.form.get('low_stock_threshold', '0')
             reminder_at_raw = request.form.get('reminder_at', '').strip()
 
+            # Sanitize text fields to remove problematic Unicode characters
+            name = _sanitize_text(name)
+            description = _sanitize_text(description)
+            notes = _sanitize_text(notes)
+            tags = _sanitize_text(tags)
+            item_type_name = _sanitize_text(item_type_name)
+            location = _sanitize_text(location)
+            url = _sanitize_text(url)
+            barcode = _sanitize_text(barcode)
+
             if not name:
                 flash('Item name is required.', 'error')
                 return redirect(url_for('list_item.create_item', list_id=list_id))
@@ -1151,14 +1190,14 @@ def edit_item(item_id):
 
     if request.method == 'POST':
         try:
-            item.name = request.form.get('name', '').strip()
-            item.description = request.form.get('description', '').strip()
-            item.notes = request.form.get('notes', '').strip()
-            item.tags = request.form.get('tags', '').strip()
-            item_type_name = request.form.get('item_type', '').strip()
-            location_name = request.form.get('location', '').strip()
-            item.url = request.form.get('url', '').strip()
-            item.barcode = request.form.get('barcode', '').strip()
+            item.name = _sanitize_text(request.form.get('name', '').strip())
+            item.description = _sanitize_text(request.form.get('description', '').strip())
+            item.notes = _sanitize_text(request.form.get('notes', '').strip())
+            item.tags = _sanitize_text(request.form.get('tags', '').strip())
+            item_type_name = _sanitize_text(request.form.get('item_type', '').strip())
+            location_name = _sanitize_text(request.form.get('location', '').strip())
+            item.url = _sanitize_text(request.form.get('url', '').strip())
+            item.barcode = _sanitize_text(request.form.get('barcode', '').strip())
 
             quantity = request.form.get('quantity', '1')
             try:
@@ -1303,7 +1342,11 @@ def inline_update_item(item_id):
         except (ValueError, TypeError):
             return jsonify({'error': 'invalid quantity'}), 400
     if 'location' in data:
-        item.location = (data['location'] or '').strip()
+        location_name = (data['location'] or '').strip()
+        if location_name:
+            item.location_obj = Location.get_or_create(location_name, current_user.id)
+        else:
+            item.location_obj = None
 
     db.session.commit()
     _log_action('update', 'item', item.id, {'inline': True})
@@ -1403,7 +1446,7 @@ def export_items(list_id):
                 item.notes or '',
                 ','.join(item.get_tags_list()),
                 item.item_type.name if item.item_type else '',
-                item.location or '',
+                item.location_obj.name if item.location_obj else '',
                 item.quantity,
                 item.barcode or '',
                 item.low_stock_threshold or 0,
@@ -1434,7 +1477,7 @@ def export_items(list_id):
                 'notes': item.notes,
                 'tags': item.get_tags_list(),
                 'item_type': item.item_type.name if item.item_type else None,
-                'location': item.location,
+                'location': item.location_obj.name if item.location_obj else '',
                 'quantity': item.quantity,
                 'barcode': item.barcode,
                 'low_stock_threshold': item.low_stock_threshold,
@@ -1509,7 +1552,7 @@ def import_items(list_id):
                     existing_item.description = row.get('description') or ''
                     existing_item.notes = row.get('notes') or ''
                     existing_item.tags = row.get('tags') or ''
-                    existing_item.location = row.get('location') or ''
+                    existing_item.location_obj_id = Location.get_or_create(row.get('location') or '', current_user.id).id if row.get('location') else None
                     existing_item.quantity = int(row.get('quantity') or 1)
                     existing_item.barcode = row.get('barcode') or ''
                     existing_item.low_stock_threshold = int(row.get('low_stock_threshold') or 0)
@@ -1620,12 +1663,12 @@ def set_item_image_main(item_id, image_id):
         flash('You do not have permission to update images.', 'error')
         return redirect(url_for('list_item.view_item', item_id=item_id))
 
-    target = ItemImage.query.filter_by(id=image_id, item_id=item_id).first()
+    target = ItemImage.query.filter_by(id=image_id, item_id=item.id).first()
     if not target:
         flash('Image not found.', 'error')
         return redirect(url_for('list_item.view_item', item_id=item_id))
 
-    ItemImage.query.filter_by(item_id=item_id, is_main=True).update({'is_main': False})
+    ItemImage.query.filter_by(item_id=item.id, is_main=True).update({'is_main': False})
     target.is_main = True
     db.session.commit()
     _log_action('set_main_image', 'item', item_id, {'image_id': image_id})

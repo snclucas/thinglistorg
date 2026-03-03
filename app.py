@@ -5,11 +5,11 @@ from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 from sqlalchemy import inspect, text, event
 from sqlalchemy.orm import attributes
-from models import db, User, List, Item, ItemType, Tag, ItemAttachment, AuditLog, item_tags, ListCustomField, ItemCustomField, ListShare, Notification, ItemImage, Group, GroupMember, Location
+from models import db, User, List, Item, ItemType, Tag, ItemAttachment, AuditLog, item_tags, list_tags, ListCustomField, ItemCustomField, ListShare, Notification, ItemImage, Group, GroupMember, Location
 from forms import RegistrationForm, LoginForm, CreateGroupForm, EditGroupForm, AddGroupMemberForm, EditGroupMemberForm, ForgotPasswordForm, ResetPasswordForm, PasswordChangeForm, ItemTypeForm, LocationForm
 from config import config
 from auth_routes import auth_bp
-from list_item_routes import list_item_bp, _log_action
+from list_item_routes import list_item_bp, _log_action, _sanitize_text
 from slug_utils import get_group_by_slug_or_id
 from flask_wtf.csrf import CSRFError, CSRFProtect
 import os
@@ -354,8 +354,8 @@ def create_group():
 
     if form.validate_on_submit():
         group = Group(
-            name=form.name.data,
-            description=form.description.data,
+            name=_sanitize_text(form.name.data),
+            description=_sanitize_text(form.description.data),
             owner_id=current_user.id
         )
         group.set_settings({
@@ -422,8 +422,8 @@ def edit_group(group_id):
     form = EditGroupForm()
 
     if form.validate_on_submit():
-        group.name = form.name.data
-        group.description = form.description.data
+        group.name = _sanitize_text(form.name.data)
+        group.description = _sanitize_text(form.description.data)
         group.set_settings({
             'allow_members_create_lists': form.allow_members_create_lists.data,
             'allow_members_edit_shared_lists': form.allow_members_edit_shared_lists.data,
@@ -937,7 +937,9 @@ def _build_item_query(list_id, args):
     if item_type:
         query = query.filter(Item.item_type.has(ItemType.name == item_type))
     if location:
-        query = query.filter(Item.location.ilike(f'%{location}%'))
+        query = query.filter(
+            Item.location_obj.has(Location.name == location)
+        )
     if low_stock:
         query = query.filter(Item.low_stock_threshold > 0, Item.quantity <= Item.low_stock_threshold)
     if min_qty.isdigit():
@@ -1248,8 +1250,8 @@ def search():
                     search_text += ' ' + item.notes
                 if search_tags and item.tags:
                     search_text += ' ' + item.tags
-                if search_locations and item.location:
-                    search_text += ' ' + item.location
+                if search_locations and item.location_obj:
+                    search_text += ' ' + item.location_obj.name
 
                 if parser.evaluate(search_text):
                     item_search_text_list.append(item)
@@ -1533,7 +1535,7 @@ def export_data():
                 'notes': item.notes or '',
                 'tags': item.get_tags_list(),
                 'item_type': item.item_type.name if item.item_type else None,
-                'location': item.location or '',
+                'location': item.location_obj.name if item.location_obj else '',
                 'quantity': item.quantity,
                 'barcode': item.barcode or '',
                 'low_stock_threshold': item.low_stock_threshold or 0,
@@ -1649,6 +1651,13 @@ def clear_all_user_data():
                 ListCustomField.list_id.in_(db.session.query(List.id).filter_by(user_id=user_id))
             ).delete()
 
+            # 6b. Delete list_tags (junction table) for user's lists before deleting lists
+            db.session.execute(
+                list_tags.delete().where(
+                    list_tags.c.list_id.in_(db.session.query(List.id).filter_by(user_id=user_id))
+                )
+            )
+
             # 7. Delete lists
             List.query.filter_by(user_id=user_id).delete()
 
@@ -1752,6 +1761,13 @@ def delete_account():
             ListCustomField.query.filter(
                 ListCustomField.list_id.in_(db.session.query(List.id).filter_by(user_id=user_id))
             ).delete()
+
+            # 6b. Delete list_tags (junction table) for user's lists before deleting lists
+            db.session.execute(
+                list_tags.delete().where(
+                    list_tags.c.list_id.in_(db.session.query(List.id).filter_by(user_id=user_id))
+                )
+            )
 
             # 7. Delete lists
             List.query.filter_by(user_id=user_id).delete()
@@ -1893,7 +1909,7 @@ def export_all_user_data():
                 'notes': item.notes or '',
                 'tags': item.get_tags_list(),
                 'item_type': item.item_type.name if item.item_type else None,
-                'location': item.location or '',
+                'location': item.location_obj.name if item.location_obj else '',
                 'quantity': item.quantity,
                 'barcode': item.barcode or '',
                 'low_stock_threshold': item.low_stock_threshold or 0,
@@ -2133,7 +2149,7 @@ def import_all_user_data():
                     existing_item.name = name
                     existing_item.description = item_data.get('description', '')
                     existing_item.notes = item_data.get('notes', '')
-                    existing_item.location = item_data.get('location', '')
+                    existing_item.location_obj = Location.get_or_create(item_data.get('location', ''), current_user.id) if item_data.get('location', '').strip() else None
                     existing_item.quantity = int(item_data.get('quantity', 1))
                     existing_item.barcode = item_data.get('barcode', '')
                     existing_item.low_stock_threshold = int(item_data.get('low_stock_threshold', 0))
@@ -2218,7 +2234,7 @@ def import_all_user_data():
 
 if __name__ == '__main__':
     print("\n" + "="*50)
-    print("ThingList - User Authentication System")
+    print("ThingList - For All your things")
     print("="*50)
     print("\n✓ Starting development server...")
     print("✓ Access the application at: http://localhost:5000")

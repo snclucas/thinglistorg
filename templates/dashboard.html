@@ -219,7 +219,7 @@
                 <a href="{{ url_for('view_group', group_id=group.slug) }}" class="summary-item-name">
                     {{ group.name }}
                 </a>
-                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="summary-item-link">
+                <a href="{{ url_for('view_group', group_id=group.slug) }}" class="summary-item-link">
                     <i class="fas fa-arrow-right"></i> View
                 </a>
             </li>

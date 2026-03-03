@@ -826,16 +826,16 @@ class List(db.Model):
         return {
             'name': {'visible': True, 'editable': True},
             'description': {'visible': True, 'editable': True},
-            'notes': {'visible': True, 'editable': True},
+            'notes': {'visible': False, 'editable': True},
             'quantity': {'visible': True, 'editable': True},
-            'low_stock_threshold': {'visible': True, 'editable': True},
+            'low_stock_threshold': {'visible': False, 'editable': True},
             'item_type': {'visible': True, 'editable': True},
             'location': {'visible': True, 'editable': True},
-            'barcode': {'visible': True, 'editable': True},
+            'barcode': {'visible': False, 'editable': True},
             'url': {'visible': True, 'editable': True},
             'tags': {'visible': True, 'editable': True},
-            'reminder_at': {'visible': True, 'editable': True},
-            'attachments': {'visible': True, 'editable': True},
+            'reminder_at': {'visible': False, 'editable': True},
+            'attachments': {'visible': False, 'editable': True},
             'images': {'visible': True, 'editable': True},
         }
 
@@ -922,7 +922,6 @@ class Item(db.Model):
     description = db.Column(db.Text)
     notes = db.Column(db.Text)
     tags = db.Column(db.String(500))  # Comma-separated tags
-    location = db.Column(db.String(150))  # Legacy string location (backward compatibility)
     quantity = db.Column(db.Integer, default=1)
     low_stock_threshold = db.Column(db.Integer, default=0)
     barcode = db.Column(db.String(128))

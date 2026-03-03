@@ -261,6 +261,7 @@
                             <div class="item-image-actions">
                                 {% if can_edit %}
                                     <form method="POST" action="{{ url_for('list_item.set_item_image_main', item_id=item.slug, image_id=image.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <button type="submit" class="modern-btn modern-btn-secondary" {% if image.is_main %}disabled{% endif %}>
                                             {% if image.is_main %}Main{% else %}Set Main{% endif %}
                                         </button>
