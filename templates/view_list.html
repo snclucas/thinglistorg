@@ -460,7 +460,11 @@
             Delete Items
         </div>
         <div class="modal-message" id="delete-message"></div>
-        <div class="modal-actions">
+        <div id="delete-spinner" style="display: none; text-align: center; padding: 2rem 0;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #ef4444;"></i>
+            <p style="margin-top: 1rem; color: #666;">Deleting items...</p>
+        </div>
+        <div class="modal-actions" id="delete-actions">
             <button id="cancel-delete-btn" class="modal-btn modal-btn-cancel">Cancel</button>
             <button id="confirm-delete-btn" class="modal-btn modal-btn-confirm">Delete</button>
         </div>
@@ -519,17 +523,20 @@ deleteBtn.addEventListener('click', function() {
     
     if (selectedItems.length === 0) return;
     
-    // Show modal
-    const itemList = selectedItems.map(item => `<li>${item.name}</li>`).join('');
-    showDeleteModal(selectedItems, itemList);
+    // Show modal with count only
+    showDeleteModal(selectedItems);
 });
 
-function showDeleteModal(selectedItems, itemList) {
+function showDeleteModal(selectedItems) {
     const modal = document.getElementById('delete-modal');
     const messageDiv = document.getElementById('delete-message');
     const confirmBtn = document.getElementById('confirm-delete-btn');
+    const deleteActions = document.getElementById('delete-actions');
+    const deleteSpinner = document.getElementById('delete-spinner');
     
-    messageDiv.innerHTML = `Delete ${selectedItems.length} item${selectedItems.length !== 1 ? 's' : ''}?<br><br><ul style="margin: 0; padding-left: 1.5rem;">${itemList}</ul>`;
+    messageDiv.innerHTML = `Delete ${selectedItems.length} item${selectedItems.length !== 1 ? 's' : ''}?`;
+    deleteActions.style.display = 'flex';
+    deleteSpinner.style.display = 'none';
     modal.classList.add('active');
     
     confirmBtn.onclick = function() {
@@ -539,6 +546,16 @@ function showDeleteModal(selectedItems, itemList) {
 
 function performBulkDelete(selectedItems) {
     const csrfToken = document.getElementById('csrf_token')?.value || '';
+    const deleteActions = document.getElementById('delete-actions');
+    const deleteSpinner = document.getElementById('delete-spinner');
+    const confirmBtn = document.getElementById('confirm-delete-btn');
+    const cancelBtn = document.getElementById('cancel-delete-btn');
+    
+    // Show spinner, hide buttons
+    deleteActions.style.display = 'none';
+    deleteSpinner.style.display = 'block';
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
     
     // Send delete requests
     Promise.all(selectedItems.map(item => 

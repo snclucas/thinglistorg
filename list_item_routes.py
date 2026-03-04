@@ -26,6 +26,7 @@ import time
 import uuid as uuid_module
 import datetime
 import logging
+import traceback
 from PIL import Image, UnidentifiedImageError
 
 # Create blueprint
@@ -33,6 +34,9 @@ list_item_bp = Blueprint('list_item', __name__)
 
 # Get logger
 logger = logging.getLogger(__name__)
+# Allow propagation to parent Flask logger which is configured for stdout
+logger.setLevel(logging.INFO)
+logger.propagate = True  # Propagate to Flask app logger
 
 
 # ============================================================================
@@ -41,6 +45,10 @@ logger = logging.getLogger(__name__)
 
 def _parse_tags(raw_tags):
     """Parse comma-separated tags string into list."""
+    if isinstance(raw_tags, list):
+        # Already a list (from JSON export)
+        return [t.strip() for t in raw_tags if t and str(t).strip()]
+    # String format (from CSV or string)
     return [t.strip() for t in (raw_tags or '').split(',') if t.strip()]
 
 
@@ -1432,7 +1440,7 @@ def export_items(list_id):
 
     format_type = request.args.get('format', 'json').lower()  # 'csv' or 'json'
 
-    items = Item.query.filter_by(list_id=list_id).order_by(Item.created_at.desc()).all()
+    items = Item.query.filter_by(list_id=user_list.id).order_by(Item.created_at.desc()).all()
 
     if format_type == 'csv':
         output = io.StringIO()
@@ -1496,20 +1504,30 @@ def export_items(list_id):
 @login_required
 def import_items(list_id):
     """Import items from CSV or JSON into a list with conflict resolution options."""
+    print(f'\n>>> IMPORT ROUTE CALLED: list_id={list_id}, method={request.method}')
+    logger.info(f'Import route called with list_id={list_id}, method={request.method}')
     user_list = get_list_by_slug_or_id(list_id)
+    logger.info(f'Resolved list: {user_list.id if user_list else None} - {user_list.name if user_list else None}')
     if not user_list:
+        logger.warning(f'List not found for id={list_id}')
         abort(404)
     if user_list.user_id != current_user.id:
+        logger.warning(f'Permission denied for user {current_user.id} on list {user_list.id}')
         flash('You do not have permission to import into this list.', 'error')
         return redirect(url_for('list_item.lists'))
 
     if request.method == 'GET':
         # Show import form
+        logger.debug(f'GET request - showing import form for list {user_list.id}')
         return render_template('import_items.html', list=user_list)
 
     # POST - handle the import
+    print(f'>>> POST REQUEST HANDLING IMPORT')
+    logger.info(f'POST request - processing import for list {user_list.id}')
     file = request.files.get('import_file')
     conflict_action = request.form.get('conflict_action', 'ignore')  # 'ignore' or 'overwrite'
+    print(f'>>> File: {file.filename if file else None}, conflict_action: {conflict_action}')
+    logger.info(f'File received: {file.filename if file else None}, conflict_action={conflict_action}')
 
     if not file or not file.filename:
         flash('Please select a file to import.', 'error')
@@ -1524,98 +1542,125 @@ def import_items(list_id):
 
         if filename.endswith('.json'):
             data = json.loads(content)
-            items_data = data.get('items', [])
+            print(f'>>> JSON Data structure: {json.dumps(data, indent=2)[:500]}...')
+            print(f'>>> Available keys in JSON: {list(data.keys()) if isinstance(data, dict) else "Not a dict - is a list"}')
+            # Handle both formats: wrapped with 'items' key, or direct list
+            if isinstance(data, dict):
+                items_data = data.get('items', [])
+            elif isinstance(data, list):
+                items_data = data
+            else:
+                items_data = []
+            logger.info(f'Importing JSON file with {len(items_data)} items')
         elif filename.endswith('.csv'):
             reader = csv.DictReader(io.StringIO(content))
             items_data = list(reader)
+            logger.info(f'Importing CSV file with {len(items_data)} items')
         else:
             flash('File must be .csv or .json', 'error')
             return redirect(url_for('list_item.import_items', list_id=list_id))
 
-        for row in items_data:
-            name = (row.get('name') or '').strip()
-            if not name:
-                continue
+        logger.info(f'Processing {len(items_data)} items from import file')
+        for idx, row in enumerate(items_data):
+            try:
+                logger.debug(f'Processing row {idx}: {row}')
+                print(f'  >>> Row {idx}: {row.get("name", "NO NAME")}')
+                name = (row.get('name') or '').strip()
+                if not name:
+                    continue
 
-            unique_id = row.get('unique_id', '').strip()
+                unique_id = row.get('unique_id', '').strip()
 
-            # Check if item with this unique_id already exists
-            existing_item = None
-            if unique_id:
-                existing_item = Item.query.filter_by(unique_id=unique_id, list_id=list_id).first()
+                # Check if item with this unique_id already exists
+                existing_item = None
+                if unique_id:
+                    existing_item = Item.query.filter_by(unique_id=unique_id, list_id=user_list.id).first()
 
-            if existing_item:
-                # Item already exists
-                if conflict_action == 'overwrite':
-                    # Update existing item
-                    existing_item.name = name
-                    existing_item.description = row.get('description') or ''
-                    existing_item.notes = row.get('notes') or ''
-                    existing_item.tags = row.get('tags') or ''
-                    existing_item.location_obj_id = Location.get_or_create(row.get('location') or '', current_user.id).id if row.get('location') else None
-                    existing_item.quantity = int(row.get('quantity') or 1)
-                    existing_item.barcode = row.get('barcode') or ''
-                    existing_item.low_stock_threshold = int(row.get('low_stock_threshold') or 0)
-                    existing_item.url = row.get('url') or ''
+                if existing_item:
+                    # Item already exists
+                    if conflict_action == 'overwrite':
+                        # Update existing item
+                        existing_item.name = name
+                        existing_item.description = row.get('description') or ''
+                        existing_item.notes = row.get('notes') or ''
+                        # Tags will be set via set_tags_list() below
+                        existing_item.location_obj_id = Location.get_or_create(row.get('location') or '', current_user.id).id if row.get('location') else None
+                        existing_item.quantity = int(row.get('quantity') or 1)
+                        existing_item.barcode = row.get('barcode') or ''
+                        existing_item.low_stock_threshold = int(row.get('low_stock_threshold') or 0)
+                        existing_item.url = row.get('url') or ''
+
+                        if row.get('reminder_at'):
+                            try:
+                                existing_item.reminder_at = datetime.datetime.fromisoformat(row['reminder_at'])
+                            except:
+                                existing_item.reminder_at = None
+
+                        if row.get('item_type'):
+                            existing_item.item_type = ItemType.get_or_create(row.get('item_type'), current_user.id)
+
+                        db.session.add(existing_item)
+                        existing_item.set_tags_list(_parse_tags(row.get('tags') or ''))
+                        updated += 1
+                    else:
+                        # Skip existing item
+                        skipped += 1
+                else:
+                    # New item - create it
+                    item_type = None
+                    if row.get('item_type'):
+                        item_type = ItemType.get_or_create(row.get('item_type'), current_user.id)
+
+                    new_unique_id = unique_id if unique_id else str(uuid_module.uuid4())
+
+                    new_item = Item(
+                        unique_id=new_unique_id,
+                        name=name,
+                        description=row.get('description') or '',
+                        notes=row.get('notes') or '',
+                        tags='',  # Tags will be set via set_tags_list() below
+                        item_type=item_type,
+                        location_id=Location.get_or_create(row.get('location') or '', current_user.id).id if row.get('location') else None,
+                        quantity=int(row.get('quantity') or 1),
+                        barcode=row.get('barcode') or '',
+                        low_stock_threshold=int(row.get('low_stock_threshold') or 0),
+                        url=row.get('url') or '',
+                        list_id=user_list.id
+                    )
 
                     if row.get('reminder_at'):
                         try:
-                            existing_item.reminder_at = datetime.datetime.fromisoformat(row['reminder_at'])
+                            new_item.reminder_at = datetime.datetime.fromisoformat(row['reminder_at'])
                         except:
-                            existing_item.reminder_at = None
+                            new_item.reminder_at = None
 
-                    if row.get('item_type'):
-                        existing_item.item_type = ItemType.get_or_create(row.get('item_type'), current_user.id)
-
-                    db.session.add(existing_item)
-                    existing_item.set_tags_list(_parse_tags(row.get('tags') or ''))
-                    updated += 1
-                else:
-                    # Skip existing item
-                    skipped += 1
-            else:
-                # New item - create it
-                item_type = None
-                if row.get('item_type'):
-                    item_type = ItemType.get_or_create(row.get('item_type'), current_user.id)
-
-                new_unique_id = unique_id if unique_id else str(uuid_module.uuid4())
-
-                new_item = Item(
-                    unique_id=new_unique_id,
-                    name=name,
-                    description=row.get('description') or '',
-                    notes=row.get('notes') or '',
-                    tags=row.get('tags') or '',
-                    item_type=item_type,
-                    location=row.get('location') or '',
-                    quantity=int(row.get('quantity') or 1),
-                    barcode=row.get('barcode') or '',
-                    low_stock_threshold=int(row.get('low_stock_threshold') or 0),
-                    url=row.get('url') or '',
-                    list_id=list_id
-                )
-
-                if row.get('reminder_at'):
-                    try:
-                        new_item.reminder_at = datetime.datetime.fromisoformat(row['reminder_at'])
-                    except:
-                        new_item.reminder_at = None
-
-                db.session.add(new_item)
-                db.session.flush()
-                new_item.set_tags_list(_parse_tags(row.get('tags') or ''))
-                imported += 1
+                    db.session.add(new_item)
+                    db.session.flush()
+                    logger.debug(f'Created item {new_item.id}: {name}')
+                    print(f'  >>> Created item {new_item.id}: {name}')
+                    new_item.set_tags_list(_parse_tags(row.get('tags') or ''))
+                    imported += 1
+            except Exception as item_error:
+                logger.error(f'Error processing row {idx}: {str(item_error)}\n{traceback.format_exc()}')
+                db.session.rollback()
+                raise
 
         db.session.commit()
-        _log_action('import', 'item', list_id, {'imported': imported, 'updated': updated, 'skipped': skipped})
+        print(f'>>> COMMIT SUCCESSFUL: {imported} imported, {updated} updated, {skipped} skipped')
+        logger.info(f'Import complete: {imported} imported, {updated} updated, {skipped} skipped')
+        _log_action('import', 'item', user_list.id, {'imported': imported, 'updated': updated, 'skipped': skipped})
 
-        message = f'Import complete: {imported} new items, {updated} updated, {skipped} skipped.'
+        message = f'✓ Import complete: {imported} new items added, {updated} updated, {skipped} skipped.'
+        if imported == 0 and updated == 0:
+            message = 'No items were imported (all skipped or file was empty).'
         flash(message, 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Failed to import: {str(e)}', 'error')
-        logger.error(f'Import error: {str(e)}')
+        print(f'>>> ERROR DURING IMPORT: {str(e)}')
+        print(f'>>> TRACEBACK:\n{traceback.format_exc()}')
+        error_msg = f'Failed to import: {str(e)}'
+        flash(error_msg, 'error')
+        logger.error(f'Import error: {str(e)}\n{traceback.format_exc()}')
 
     return redirect(url_for('list_item.view_list', list_id=list_id))
 
@@ -1627,9 +1672,9 @@ def export_lists_csv():
     lists = List.query.filter_by(user_id=current_user.id, group_id=None).order_by(List.created_at.desc()).all()
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(['name', 'description', 'tags', 'created_at'])
+    writer.writerow(['unique_id', 'name', 'description', 'tags', 'created_at'])
     for lst in lists:
-        writer.writerow([lst.name, lst.description or '', ','.join(lst.get_tags_list()), lst.created_at.isoformat()])
+        writer.writerow([lst.unique_id, lst.name, lst.description or '', ','.join(lst.get_tags_list()), lst.created_at.isoformat()])
     output.seek(0)
     return Response(output.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=lists.csv'})
 
