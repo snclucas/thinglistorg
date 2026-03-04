@@ -106,6 +106,7 @@ class TestingConfig(Config):
     DEBUG = True
     TESTING = True
     WTF_CSRF_ENABLED = False
+    SERVER_NAME = 'localhost'
     
     # Build test database URI from same credentials but with test database name
     _test_db_host = os.environ.get('DB_HOST_TEST', 'localhost')

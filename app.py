@@ -2190,7 +2190,7 @@ def import_all_user_data():
                     notes=item_data.get('notes', ''),
                     tags=','.join(item_data.get('tags', [])),
                     item_type=item_type,
-                    location=item_data.get('location', ''),
+                    location_id=Location.get_or_create(item_data.get('location', ''), current_user.id).id if item_data.get('location', '').strip() else None,
                     quantity=int(item_data.get('quantity', 1)),
                     barcode=item_data.get('barcode', ''),
                     low_stock_threshold=int(item_data.get('low_stock_threshold', 0)),

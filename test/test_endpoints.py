@@ -58,8 +58,6 @@ def app():
     flask_app.config['REGISTRATIONS_ENABLED'] = True
     flask_app.config['RECAPTCHA_ENABLED'] = False
 
-    print(flask_app.config)
-    
     with flask_app.app_context():
         db.create_all()
         yield flask_app
@@ -174,13 +172,12 @@ def test_location(app, test_user):
 
 
 @pytest.fixture
-def authenticated_client(client, test_user):
+def authenticated_client(app, client, test_user):
     """Create an authenticated test client with logged-in test user."""
-    with client:
-        client.post(url_for('auth.login'), data={
-            'username': 'testuser',
-            'password': 'password123'
-        })
+    # Use session_transaction to set user session directly
+    with client.session_transaction() as sess:
+        sess['_user_id'] = str(test_user.id)
+    
     return client
 
 
@@ -203,7 +200,7 @@ class TestAuthRoutes:
             'username': 'newuser',
             'email': 'newuser@example.com',
             'password': 'SecurityPass123!',
-            'confirm_password': 'SecurityPass123!'
+            'password_confirm': 'SecurityPass123!'
         }, follow_redirects=True)
         
         assert response.status_code == 200
@@ -218,7 +215,7 @@ class TestAuthRoutes:
             'username': 'testuser',
             'email': 'different@example.com',
             'password': 'SecurityPass123!',
-            'confirm_password': 'SecurityPass123!'
+            'password_confirm': 'SecurityPass123!'
         })
         
         assert response.status_code == 200
@@ -230,7 +227,7 @@ class TestAuthRoutes:
             'username': 'newuser',
             'email': 'testuser@example.com',
             'password': 'SecurityPass123!',
-            'confirm_password': 'SecurityPass123!'
+            'password_confirm': 'SecurityPass123!'
         })
         
         assert response.status_code == 200
@@ -242,7 +239,7 @@ class TestAuthRoutes:
             'username': 'newuser',
             'email': 'newuser@example.com',
             'password': 'SecurityPass123!',
-            'confirm_password': 'DifferentPass123!'
+            'password_confirm': 'DifferentPass123!'
         })
         
         assert response.status_code == 200
@@ -253,7 +250,7 @@ class TestAuthRoutes:
             'username': 'newuser',
             'email': 'newuser@example.com',
             'password': 'weak',
-            'confirm_password': 'weak'
+            'password_confirm': 'weak'
         })
         
         assert response.status_code == 200
@@ -293,7 +290,7 @@ class TestAuthRoutes:
 
     def test_logout(self, authenticated_client):
         """Test user logout."""
-        response = authenticated_client.get(url_for('auth.logout'), follow_redirects=True)
+        response = authenticated_client.get(url_for('logout'), follow_redirects=True)
         
         assert response.status_code == 200
 
@@ -302,26 +299,40 @@ class TestAuthRoutes:
         response = authenticated_client.get(url_for('auth.change_password'))
         assert response.status_code == 200
 
-    def test_change_password_valid(self, authenticated_client, test_user):
+    def test_change_password_valid(self, authenticated_client, test_user, app):
         """Test successful password change."""
-        response = authenticated_client.post(url_for('auth.change_password'), data={
+        # Verify user is authenticated
+        with app.test_request_context():
+            verify_url = url_for('auth.change_password')
+        response = authenticated_client.get(verify_url)
+        assert response.status_code == 200, f"Not authenticated: got {response.status_code} instead of 200"
+        
+        # Now attempt password change
+        with app.test_request_context():
+            change_pw_url = url_for('auth.change_password')
+        
+        response = authenticated_client.post(change_pw_url, data={
             'current_password': 'password123',
             'new_password': 'NewPassword123!',
-            'confirm_password': 'NewPassword123!'
+            'new_password_confirm': 'NewPassword123!'
         }, follow_redirects=True)
         
         assert response.status_code == 200
-        # Refresh user from database
+        assert b'success' in response.data.lower(), "Password change did not return success message"
+        
+        # Refresh user from database to get latest password hash
+        db.session.expire(test_user)
         user = User.query.get(test_user.id)
-        assert user.check_password('NewPassword123!')
+        assert user is not None, "User not found in database"
+        assert user.check_password('NewPassword123!'), f"Password not updated in database"
 
     def test_change_password_incorrect_current(self, authenticated_client):
         """Test password change with incorrect current password."""
         response = authenticated_client.post(url_for('auth.change_password'), data={
             'current_password': 'wrongpassword',
             'new_password': 'NewPassword123!',
-            'confirm_password': 'NewPassword123!'
-        })
+            'new_password_confirm': 'NewPassword123!'
+        }, follow_redirects=True)
         
         assert response.status_code == 200
 
@@ -331,9 +342,11 @@ class TestAuthRoutes:
         assert response.status_code == 302  # Should redirect to login
 
     # Password reset tests
-    def test_forgot_password_get(self, client):
+    def test_forgot_password_get(self, client, app):
         """Test GET request to forgot password page."""
-        response = client.get(url_for('auth.forgot_password') if hasattr(client.application, 'forgot_password') else '/forgot-password')
+        with app.test_request_context():
+            forgot_url = url_for('auth.forgot_password')
+        response = client.get(forgot_url)
         
         # This endpoint may not exist in auth_routes, check in app.py
         if response.status_code == 404:
@@ -378,9 +391,11 @@ class TestDashboardAndProfile:
         response = authenticated_client.get(url_for('dashboard'))
         assert response.status_code == 200
 
-    def test_profile_unauthorized(self, client):
+    def test_profile_unauthorized(self, client, app):
         """Test profile access without authentication."""
-        response = client.get(url_for('profile') if hasattr(client.application, 'profile') else '/profile')
+        with app.test_request_context():
+            profile_url = url_for('profile')
+        response = client.get(profile_url)
         assert response.status_code == 302
 
     def test_profile_authorized(self, authenticated_client):
@@ -388,9 +403,11 @@ class TestDashboardAndProfile:
         response = authenticated_client.get('/profile')
         assert response.status_code in [200, 404]  # May not exist in app
 
-    def test_preferences_get(self, authenticated_client):
+    def test_preferences_get(self, authenticated_client, app):
         """Test GET request to preferences page."""
-        response = authenticated_client.get(url_for('preferences') if hasattr(client.application, 'preferences') else '/preferences')
+        with app.test_request_context():
+            prefs_url = url_for('user_preferences')
+        response = authenticated_client.get(prefs_url)
         
         # Check if endpoint exists
         if response.status_code != 404:
