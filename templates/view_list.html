@@ -168,31 +168,31 @@
         <div class="list-header-content" style="display: flex; flex-direction: column; gap: 1rem;">
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                 {% if current_user.is_authenticated and list.user_id == current_user.id %}
-                    <a href="{{ url_for('list_item.edit_list', list_id=list.slug) }}" class="modern-btn modern-btn-secondary">
+                    <a href="{{ get_list_url(list, endpoint='list_item.edit_list') }}" class="modern-btn modern-btn-secondary">
                         <i class="fas fa-pen"></i>
                         Edit List
                     </a>
-                    <a href="{{ url_for('list_item.share_list', list_id=list.slug) }}" class="modern-btn modern-btn-secondary">
+                    <a href="{{ get_list_url(list, endpoint='list_item.share_list') }}" class="modern-btn modern-btn-secondary">
                         <i class="fas fa-share-alt"></i>
                         Share
                     </a>
-                    <a href="{{ url_for('list_item.list_settings', list_id=list.slug) }}" class="modern-btn modern-btn-secondary">
+                    <a href="{{ get_list_url(list, endpoint='list_item.list_settings') }}" class="modern-btn modern-btn-secondary">
                         <i class="fas fa-cog"></i>
                         Settings
                     </a>
-                    <a href="{{ url_for('list_item.export_items', list_id=list.slug, format='json') }}" class="modern-btn modern-btn-secondary" title="Export as JSON">
+                    <a href="{{ get_list_url(list, endpoint='list_item.export_items', format='json') }}" class="modern-btn modern-btn-secondary" title="Export as JSON">
                         <i class="fas fa-download"></i>
                         Export (JSON)
                     </a>
-                    <a href="{{ url_for('list_item.export_items', list_id=list.slug, format='csv') }}" class="modern-btn modern-btn-secondary" title="Export as CSV">
+                    <a href="{{ get_list_url(list, endpoint='list_item.export_items', format='csv') }}" class="modern-btn modern-btn-secondary" title="Export as CSV">
                         <i class="fas fa-download"></i>
                         Export (CSV)
                     </a>
-                    <a href="{{ url_for('list_item.import_items', list_id=list.slug) }}" class="modern-btn modern-btn-secondary" title="Import items">
+                    <a href="{{ get_list_url(list, endpoint='list_item.import_items') }}" class="modern-btn modern-btn-secondary" title="Import items">
                         <i class="fas fa-upload"></i>
                         Import
                     </a>
-                    <form method="POST" action="{{ url_for('list_item.delete_list', list_id=list.slug) }}" style="display: inline;">
+                    <form method="POST" action="{{ get_list_url(list, endpoint='list_item.delete_list') }}" style="display: inline;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="modern-btn modern-btn-danger" onclick="return confirm('Delete this list and all its items? This cannot be undone.');">
                             <i class="fas fa-trash"></i>
@@ -235,7 +235,7 @@
         {% if items %}
         <div class="items-section-header">
             {% if can_edit %}
-            <a href="{{ url_for('list_item.create_item', list_id=list.slug) }}" class="modern-btn modern-btn-primary">
+            <a href="{{ get_list_url(list, endpoint='list_item.create_item') }}" class="modern-btn modern-btn-primary">
                 <i class="fas fa-plus"></i>
                 Add Item
             </a>
@@ -246,7 +246,7 @@
             <span id="selection-count" style="color: var(--gray-500); font-size: 0.9rem;"></span>
             {% endif %}
             {% if filters.q or filters.tag or filters.type or filters.location or filters.low_stock %}
-            <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="clear-filters-btn">
+            <a href="{{ get_list_url(list, endpoint='list_item.view_list') }}" class="clear-filters-btn">
                 <i class="fas fa-times"></i>
                 Clear Filters
             </a>

@@ -169,7 +169,7 @@
                     {% set list = item.list %}
                     <tr>
                         <td data-label="Name" class="list-name-cell">
-                                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="list-name-link">
+                                <a href="{{ get_list_url(list) }}" class="list-name-link">
                                 <i class="fas fa-list"></i>
                                 {{ list.name }}
                             </a>

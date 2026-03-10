@@ -129,7 +129,7 @@
                         {% for list in lists %}
                         <tr>
                             <td data-label="Name" class="list-name-cell">
-                                <a href="{{ url_for('list_item.view_list', list_id=list.slug or list.id) }}" class="list-name-link">
+                                <a href="{{ get_list_url(list) }}" class="list-name-link">
                                     <i class="fas fa-list"></i>
                                     {{ list.name }}
                                 </a>
@@ -145,12 +145,12 @@
                                 {{ list.items|length }}
                             </td>
                             <td style="text-align: right;">
-                                <a href="{{ url_for('list_item.view_list', list_id=list.slug or list.id) }}" class="modern-btn modern-btn-xs modern-btn-secondary" title="View">
+                                <a href="{{ get_list_url(list) }}" class="modern-btn modern-btn-xs modern-btn-secondary" title="View">
                                     <i class="fas fa-eye"></i>
                                     View
                                 </a>
                                 {% if current_user.id == group.owner_id or group.is_admin(current_user.id) %}
-                                <a href="{{ url_for('list_item.edit_list', list_id=list.slug or list.id) }}" class="modern-btn modern-btn-xs modern-btn-secondary" title="Edit">
+                                <a href="{{ get_list_url(list, endpoint='list_item.edit_list') }}" class="modern-btn modern-btn-xs modern-btn-secondary" title="Edit">
                                     <i class="fas fa-edit"></i>
                                     Edit
                                 </a>

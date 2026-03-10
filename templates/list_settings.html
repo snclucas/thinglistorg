@@ -393,7 +393,7 @@
             My Lists
         </a>
         <span> / </span>
-        <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}">{{ list.name }}</a>
+        <a href="{{ get_list_url(list) }}">{{ list.name }}</a>
         <span> / </span>
         <span style="color: var(--gray-600);">Settings</span>
     </div>
@@ -421,7 +421,7 @@
     </div>
 
     <!-- Field Settings Form -->
-    <form method="POST" action="{{ url_for('list_item.list_settings', list_id=list.slug) }}">
+    <form method="POST" action="{{ get_list_url(list, endpoint='list_item.list_settings') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="settings-card">
             <h2 class="settings-card-title">
@@ -495,7 +495,7 @@
                 <i class="fas fa-check"></i>
                 Save Settings
             </button>
-            <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="modern-btn modern-btn-secondary">
+            <a href="{{ get_list_url(list) }}" class="modern-btn modern-btn-secondary">
                 <i class="fas fa-times"></i>
                 Cancel
             </a>

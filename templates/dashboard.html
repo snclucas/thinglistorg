@@ -266,10 +266,10 @@
         <ul class="summary-list">
             {% for list in user_lists %}
             <li class="summary-item">
-                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="summary-item-name">
+                <a href="{{ get_list_url(list) }}" class="summary-item-name">
                     {{ list.name }}
                 </a>
-                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="summary-item-link">
+                <a href="{{ get_list_url(list) }}" class="summary-item-link">
                     <i class="fas fa-arrow-right"></i> View
                 </a>
             </li>
@@ -289,10 +289,10 @@
         <ul class="summary-list">
             {% for list in shared_lists %}
             <li class="summary-item">
-                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="summary-item-name">
+                <a href="{{ get_list_url(list) }}" class="summary-item-name">
                     {{ list.name }}
                 </a>
-                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="summary-item-link">
+                <a href="{{ get_list_url(list) }}" class="summary-item-link">
                     <i class="fas fa-arrow-right"></i> View
                 </a>
             </li>

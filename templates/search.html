@@ -556,11 +556,11 @@
             <div class="collapsible-content" id="lists-section">
                 <div class="results-grid">
                 {% for list in lists %}
-                <div class="result-card" onclick="window.location.href='{{ url_for('list_item.view_list', list_id=list.slug) }}'">
+                <div class="result-card" onclick="window.location.href='{{ get_list_url(list) }}'">
                     <div class="result-card-header">
                         <div style="flex: 1;">
                             <h3 class="result-title">
-                                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}">{{ list.name }}</a>
+                                <a href="{{ get_list_url(list) }}">{{ list.name }}</a>
                             </h3>
                             {% if list.description %}
                                 <div class="result-description">{{ list.description[:200] }}{% if list.description|length > 200 %}...{% endif %}</div>

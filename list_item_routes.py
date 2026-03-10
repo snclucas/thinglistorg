@@ -90,6 +90,50 @@ def _log_action(action, entity, entity_id, meta=None):
         db.session.rollback()
 
 
+def get_list_url(list_obj, endpoint='list_item.view_list', **kwargs):
+    """Generate the correct URL for a list, including group slug if applicable.
+    
+    Args:
+        list_obj: The List object
+        endpoint: The Flask endpoint to use (default: view_list)
+        **kwargs: Additional parameters to pass to url_for
+    
+    Returns:
+        A URL string for the list
+    """
+    if list_obj.group_id:
+        # List belongs to a group - use group-based URL pattern
+        group = list_obj.group
+        if group:
+            # Generate URL as /<group_slug>/<list_slug>/<action>
+            # The route will handle resolving both slugs
+            base_url = f"/{group.slug or group.id}/{list_obj.slug or list_obj.id}"
+            
+            # Map endpoints to URL extensions
+            endpoint_extensions = {
+                'list_item.view_list': '',
+                'list_item.edit_list': '/edit',
+                'list_item.list_settings': '/settings',
+                'list_item.share_list': '/share',
+                'list_item.create_item': '/items/create',
+                'list_item.export_items': '/export',
+                'list_item.import_items': '/import',
+            }
+            
+            extension = endpoint_extensions.get(endpoint, '')
+            url = base_url + extension
+            
+            # Add query parameters if provided
+            if kwargs:
+                params = '&'.join(f"{k}={v}" for k, v in kwargs.items())
+                url += f"?{params}"
+            
+            return url
+    
+    # Personal list - use regular URL
+    return url_for(endpoint, list_id=list_obj.slug or list_obj.id, **kwargs)
+
+
 def _save_attachments(item, files):
     """Save file attachments to an item."""
     from models import ItemAttachment
@@ -473,6 +517,96 @@ def view_list(list_id):
     )
 
 
+# Group list routes - handle /<group_slug>/<list_slug> pattern
+@list_item_bp.route('/<group_slug>/<list_slug>')
+def view_group_list(group_slug, list_slug):
+    """View a list that belongs to a group"""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+
+    # Check access permissions
+    if current_user.is_authenticated:
+        # Logged in user - check group membership and list permissions
+        if not user_list.user_can_access(current_user.id):
+            flash('You do not have permission to view this list.', 'error')
+            return redirect(url_for('list_item.lists'))
+        can_edit = user_list.user_can_edit(current_user.id)
+    else:
+        # Not logged in - only allow public/hidden lists
+        if not user_list.is_publicly_accessible():
+            flash('You must log in to view this list.', 'info')
+            return redirect(url_for('auth.login', next=request.url))
+        can_edit = False
+
+    # Filters and pagination
+    page = max(int(request.args.get('page', 1)), 1)
+
+    # Get per_page from URL parameter or default
+    url_per_page = request.args.get('per_page', None)
+    if url_per_page:
+        per_page = min(max(int(url_per_page), 5), 100)
+    else:
+        # For anonymous users, default to 20
+        # For authenticated users, use their preference
+        if current_user.is_authenticated:
+            per_page = current_user.get_items_per_page()
+        else:
+            per_page = 20
+
+    base_query = _build_item_query(user_list.id, request.args)
+    total = base_query.count()
+    items = (base_query
+             .order_by(Item.created_at.desc())
+             .offset((page - 1) * per_page)
+             .limit(per_page)
+             .all())
+
+    pages = (total + per_page - 1) // per_page if total else 1
+
+    # Lists for bulk move action (only owned lists or lists user can edit)
+    # Only query user lists if user is authenticated
+    user_lists = []
+    if current_user.is_authenticated:
+        user_lists = List.query.filter_by(user_id=current_user.id, group_id=None).order_by(List.created_at.desc()).all()
+
+    return render_template(
+        'view_list.html',
+        list=user_list,
+        items=items,
+        total=total,
+        page=page,
+        pages=pages,
+        per_page=per_page,
+        user_lists=user_lists,
+        can_edit=can_edit,
+        group=group,
+        filters={
+            'q': request.args.get('q', ''),
+            'tag': request.args.get('tag', ''),
+            'type': request.args.get('type', ''),
+            'location': request.args.get('location', ''),
+            'low_stock': request.args.get('low_stock', '')
+        }
+    )
+
+
 @list_item_bp.route('/lists/<list_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_list(list_id):
@@ -803,6 +937,325 @@ def share_list(list_id):
     shared_users = user_list.get_shared_users()
 
     return render_template('share_list.html', list=user_list, shared_users=shared_users)
+
+
+# ============================================================================
+# GROUP LIST ROUTES (/<group_slug>/<list_slug> pattern)
+# ============================================================================
+
+@list_item_bp.route('/<group_slug>/<list_slug>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_group_list(group_slug, list_slug):
+    """Edit a group list"""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+
+    # Only group owners can edit (lists in groups belong to the group, not individual users)
+    if not group.user_can_manage(current_user.id):
+        flash('You do not have permission to edit this list.', 'error')
+        return redirect(get_list_url(user_list))
+
+    if request.method == 'POST':
+        try:
+            user_list.name = _sanitize_text(request.form.get('name', '').strip())
+            user_list.description = _sanitize_text(request.form.get('description', '').strip())
+            user_list.tags = _sanitize_text(request.form.get('tags', '').strip())
+            visibility = request.form.get('visibility', 'private').strip()
+
+            # Validate visibility value
+            if visibility not in ('private', 'public', 'hidden'):
+                visibility = user_list.visibility or 'private'
+
+            user_list.visibility = visibility
+            user_list.set_tags_list(_parse_tags(user_list.tags))
+
+            if not user_list.name:
+                flash('List name is required.', 'error')
+                return redirect(get_list_url(user_list, endpoint='list_item.edit_group_list'))
+
+            db.session.commit()
+            _log_action('update', 'list', user_list.id, {'name': user_list.name, 'visibility': visibility})
+            flash('List updated successfully!', 'success')
+            return redirect(get_list_url(user_list))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while updating the list.', 'error')
+            logger.error(f'Edit group list error: {str(e)}')
+
+    return render_template('edit_list.html', list=user_list, group=group)
+
+
+@list_item_bp.route('/<group_slug>/<list_slug>/delete', methods=['POST'])
+@login_required
+def delete_group_list(group_slug, list_slug):
+    """Delete a group list"""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+
+    # Only group owners can delete
+    if not group.user_can_manage(current_user.id):
+        flash('You do not have permission to delete this list.', 'error')
+        return redirect(get_list_url(user_list))
+
+    try:
+        list_name = user_list.name
+
+        # Get all items in the list
+        items = Item.query.filter_by(list_id=user_list.id).all()
+
+        # Delete all items in the list
+        for item in items:
+            db.session.delete(item)
+
+        # Delete all shares for this list
+        ListShare.query.filter_by(original_list_id=user_list.id).delete()
+
+        # Delete all custom fields for this list
+        CustomField.query.filter_by(list_id=user_list.id).delete()
+
+        # Delete the list itself
+        db.session.delete(user_list)
+        db.session.commit()
+
+        _log_action('delete', 'list', user_list.id, {'name': list_name})
+        flash(f'List "{list_name}" deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while deleting the list.', 'error')
+        logger.error(f'Delete group list error: {str(e)}')
+
+    return redirect(url_for('groups.view_group', group_id=group_id))
+
+
+@list_item_bp.route('/<group_slug>/<list_slug>/settings', methods=['GET', 'POST'])
+@login_required
+def group_list_settings(group_slug, list_slug):
+    """Configure group list field visibility and editability settings"""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+
+    # Only group owners can change settings
+    if not group.user_can_manage(current_user.id):
+        flash('You do not have permission to edit this list.', 'error')
+        return redirect(get_list_url(user_list))
+
+    if request.method == 'POST':
+        try:
+            settings = request.form.get('field_settings', '{}')
+            user_list.set_field_settings(json.loads(settings))
+            db.session.commit()
+            _log_action('update_settings', 'list', user_list.id, {})
+            flash('Field settings updated successfully!', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while updating settings.', 'error')
+            logger.error(f'Update group list settings error: {str(e)}')
+
+    # Get current field settings
+    field_settings = user_list.get_field_settings()
+    
+    return render_template('list_settings.html', list=user_list, group=group, field_settings=field_settings)
+
+
+@list_item_bp.route('/<group_slug>/<list_slug>/share', methods=['GET', 'POST'])
+@login_required
+def share_group_list(group_slug, list_slug):
+    """Manage group list sharing with other group members or users"""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+
+    # Only group owners can share group lists
+    if not group.user_can_manage(current_user.id):
+        flash('You do not have permission to share this list.', 'error')
+        return redirect(get_list_url(user_list))
+
+    if request.method == 'POST':
+        try:
+            action = request.form.get('action')
+
+            if action == 'add':
+                username = request.form.get('username', '').strip()
+                permission = request.form.get('permission', 'view').strip()
+
+                if not username:
+                    flash('Username is required.', 'error')
+                    return redirect(get_list_url(user_list, endpoint='list_item.share_group_list'))
+
+                if permission not in ('view', 'edit'):
+                    permission = 'view'
+
+                # Find the user
+                share_user = User.query.filter_by(username=username).first()
+                if not share_user:
+                    flash(f'User "{username}" not found.', 'error')
+                    return redirect(get_list_url(user_list, endpoint='list_item.share_group_list'))
+
+                if share_user.id == group.user_id:
+                    flash('You cannot share with the group owner.', 'error')
+                    return redirect(get_list_url(user_list, endpoint='list_item.share_group_list'))
+
+                # Check if already shared
+                existing = ListShare.query.filter_by(
+                    original_list_id=user_list.id,
+                    user_id=share_user.id
+                ).first()
+
+                if existing:
+                    flash(f'Already shared with {share_user.username}.', 'info')
+                else:
+                    share = ListShare(
+                        original_list_id=user_list.id,
+                        user_id=share_user.id,
+                        permission_level=permission
+                    )
+                    db.session.add(share)
+                    db.session.commit()
+
+                    # Create notification
+                    notification = Notification(
+                        user_id=share_user.id,
+                        notification_type='list_shared',
+                        message=f'{current_user.username} shared "{user_list.name}" with you',
+                        list_id=user_list.id,
+                        shared_by_username=current_user.username,
+                        permission_level=permission
+                    )
+                    db.session.add(notification)
+                    db.session.commit()
+
+                    _log_action('create_share', 'list', user_list.id, {
+                        'user': share_user.username,
+                        'permission': permission
+                    })
+                    flash(f'Shared with {share_user.username}.', 'success')
+
+                return redirect(get_list_url(user_list, endpoint='list_item.share_group_list'))
+
+            elif action == 'remove':
+                share_id = request.form.get('share_id')
+                share = ListShare.query.filter_by(id=share_id, original_list_id=user_list.id).first()
+
+                if share:
+                    db.session.delete(share)
+                    db.session.commit()
+                    _log_action('delete_share', 'list', user_list.id, {'user': share.user.username})
+                    flash(f'Removed access for {share.user.username}.', 'success')
+
+                return redirect(get_list_url(user_list, endpoint='list_item.share_group_list'))
+
+            elif action == 'update':
+                share_id = request.form.get('share_id')
+                permission = request.form.get('permission', 'view').strip()
+
+                if permission not in ('view', 'edit'):
+                    permission = 'view'
+
+                share = ListShare.query.filter_by(id=share_id, original_list_id=user_list.id).first()
+
+                if share:
+                    old_permission = share.permission_level
+                    share.permission_level = permission
+                    db.session.commit()
+
+                    # Create notification for permission change
+                    if old_permission != permission:
+                        notification = Notification(
+                            user_id=share.user_id,
+                            notification_type='permission_change',
+                            message=f'{current_user.username} changed your permission on "{user_list.name}" from {old_permission} to {permission}',
+                            list_id=user_list.id,
+                            shared_by_username=current_user.username,
+                            permission_level=permission
+                        )
+                        db.session.add(notification)
+                        db.session.commit()
+
+                    _log_action('update_share', 'list', user_list.id, {
+                        'user': share.user.username,
+                        'permission': permission
+                    })
+                    flash(f'Updated permissions for {share.user.username}.', 'success')
+                    return redirect(get_list_url(user_list, endpoint='list_item.share_group_list'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while managing shares.', 'error')
+            logger.error(f'Share group list error: {str(e)}')
+            return redirect(get_list_url(user_list, endpoint='list_item.share_group_list'))
+
+    # Get shared users
+    shared_users = user_list.get_shared_users()
+
+    return render_template('share_list.html', list=user_list, group=group, shared_users=shared_users)
 
 
 # ============================================================================
@@ -1151,6 +1604,300 @@ def create_item(list_id):
 
     return render_template('create_item.html', list=user_list)
 
+
+@list_item_bp.route('/<group_slug>/<list_slug>/items/create', methods=['GET', 'POST'])
+@login_required
+def create_group_item(group_slug, list_slug):
+    """Create a new item in a group list"""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+
+    if not user_list.user_can_edit(current_user.id):
+        flash('You do not have permission to add items to this list.', 'error')
+        return redirect(get_list_url(user_list))
+
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+            notes = request.form.get('notes', '').strip()
+            tags = request.form.get('tags', '').strip()
+            item_type_name = request.form.get('item_type', '').strip()
+            location = request.form.get('location', '').strip()
+            quantity = request.form.get('quantity', '1')
+            url = request.form.get('url', '').strip()
+            barcode = request.form.get('barcode', '').strip()
+            low_stock_threshold = request.form.get('low_stock_threshold', '0')
+            reminder_at_raw = request.form.get('reminder_at', '').strip()
+
+            # Sanitize text fields to remove problematic Unicode characters
+            name = _sanitize_text(name)
+            description = _sanitize_text(description)
+            notes = _sanitize_text(notes)
+            tags = _sanitize_text(tags)
+            item_type_name = _sanitize_text(item_type_name)
+            location = _sanitize_text(location)
+            url = _sanitize_text(url)
+            barcode = _sanitize_text(barcode)
+
+            if not name:
+                flash('Item name is required.', 'error')
+                return redirect(get_list_url(user_list, endpoint='list_item.create_group_item'))
+
+            try:
+                quantity = int(quantity) if quantity else 1
+            except ValueError:
+                quantity = 1
+
+            try:
+                low_stock_threshold = int(low_stock_threshold) if low_stock_threshold else 0
+            except ValueError:
+                low_stock_threshold = 0
+
+            # Parse reminder_at as ISO format date
+            reminder_at = None
+            if reminder_at_raw:
+                try:
+                    reminder_at = datetime.datetime.fromisoformat(reminder_at_raw)
+                except ValueError:
+                    reminder_at = None
+
+            # Get or create item type
+            item_type = None
+            if item_type_name:
+                item_type = ItemType.get_or_create(item_type_name, current_user.id)
+
+            # Get or create location
+            location_obj = None
+            if location:
+                location_obj = Location.get_or_create(location, current_user.id)
+
+            new_item = Item(
+                name=name,
+                description=description,
+                notes=notes,
+                tags=tags,
+                item_type=item_type,
+                location_obj=location_obj,
+                quantity=quantity,
+                url=url,
+                barcode=barcode,
+                low_stock_threshold=low_stock_threshold,
+                reminder_at=reminder_at,
+                list_id=user_list.id
+            )
+            db.session.add(new_item)
+            db.session.flush()
+            new_item.set_tags_list(_parse_tags(tags))
+            _save_attachments(new_item, request.files.getlist('attachments'))
+            _save_item_images(new_item, request.files.getlist('images'))
+
+            # Handle custom fields
+            for field in user_list.get_custom_fields():
+                custom_value = request.form.get(f'custom_{field.id}', '').strip()
+
+                if field.field_type == 'text':
+                    if custom_value:
+                        custom_field = ItemCustomField(
+                            item_id=new_item.id,
+                            field_id=field.id,
+                            value_text=custom_value
+                        )
+                        db.session.add(custom_field)
+
+                elif field.field_type == 'boolean':
+                    # Checkbox only present if checked
+                    is_checked = f'custom_{field.id}' in request.form
+                    if is_checked:
+                        custom_field = ItemCustomField(
+                            item_id=new_item.id,
+                            field_id=field.id,
+                            value_bool=True
+                        )
+                        db.session.add(custom_field)
+
+                elif field.field_type == 'options':
+                    if custom_value:
+                        custom_field = ItemCustomField(
+                            item_id=new_item.id,
+                            field_id=field.id,
+                            value_option=custom_value
+                        )
+                        db.session.add(custom_field)
+
+            db.session.commit()
+
+            _log_action('create', 'item', new_item.id, {'name': name, 'list_id': list_id})
+            flash(f'Item "{name}" added successfully!', 'success')
+            return redirect(get_list_url(user_list))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while creating the item.', 'error')
+            logger.error(f'Create group item error: {str(e)}')
+
+    return render_template('create_item.html', list=user_list, group=group)
+
+
+@list_item_bp.route('/<group_slug>/<list_slug>/export', methods=['GET'])
+@login_required
+def export_group_items(group_slug, list_slug):
+    """Export group list items"""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+
+    if not user_list.user_can_access(current_user.id):
+        flash('You do not have permission to export this list.', 'error')
+        return redirect(url_for('list_item.lists'))
+
+    # Get format from query parameter
+    export_format = request.args.get('format', 'csv').lower()
+    if export_format not in ('csv', 'json'):
+        export_format = 'csv'
+
+    items = Item.query.filter_by(list_id=user_list.id).all()
+
+    if export_format == 'csv':
+        return _export_items_csv(items, user_list.name)
+    else:
+        return _export_items_json(items, user_list.name)
+
+
+@list_item_bp.route('/<group_slug>/<list_slug>/import', methods=['GET', 'POST'])
+@login_required
+def import_group_items(group_slug, list_slug):
+    """Import items into a group list"""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+
+    if not user_list.user_can_edit(current_user.id):
+        flash('You do not have permission to import items to this list.', 'error')
+        return redirect(get_list_url(user_list))
+
+    if request.method == 'POST':
+        try:
+            file = request.files.get('file')
+            if not file or file.filename == '':
+                flash('No file selected.', 'error')
+                return redirect(get_list_url(user_list, endpoint='list_item.import_group_items'))
+
+            import_format = request.form.get('format', 'csv').lower()
+            if import_format not in ('csv', 'json'):
+                import_format = 'csv'
+
+            # Read and parse the file
+            if import_format == 'csv':
+                items_data = _import_items_from_csv(file)
+            else:
+                items_data = _import_items_from_json(file)
+
+            if not items_data:
+                flash('No valid items found in file.', 'warning')
+                return redirect(get_list_url(user_list, endpoint='list_item.import_group_items'))
+
+            added_count = 0
+            for item_data in items_data:
+                try:
+                    new_item = Item(
+                        name=_sanitize_text(item_data.get('name', 'Unnamed')),
+                        description=_sanitize_text(item_data.get('description', '')),
+                        notes=_sanitize_text(item_data.get('notes', '')),
+                        tags=_sanitize_text(item_data.get('tags', '')),
+                        quantity=int(item_data.get('quantity', 1)) if item_data.get('quantity') else 1,
+                        url=_sanitize_text(item_data.get('url', '')),
+                        barcode=_sanitize_text(item_data.get('barcode', '')),
+                        low_stock_threshold=int(item_data.get('low_stock_threshold', 0)) if item_data.get('low_stock_threshold') else 0,
+                        list_id=user_list.id
+                    )
+
+                    # Handle item type
+                    if item_data.get('item_type'):
+                        new_item.item_type = ItemType.get_or_create(
+                            _sanitize_text(item_data.get('item_type')), 
+                            current_user.id
+                        )
+
+                    # Handle location
+                    if item_data.get('location'):
+                        new_item.location_obj = Location.get_or_create(
+                            _sanitize_text(item_data.get('location')), 
+                            current_user.id
+                        )
+
+                    db.session.add(new_item)
+                    db.session.flush()
+                    new_item.set_tags_list(_parse_tags(new_item.tags))
+                    added_count += 1
+                except Exception as e:
+                    logger.error(f'Error importing item: {str(e)}')
+                    continue
+
+            db.session.commit()
+            _log_action('import', 'items', user_list.id, {'count': added_count})
+            flash(f'{added_count} items imported successfully!', 'success')
+            return redirect(get_list_url(user_list))
+
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred during import.', 'error')
+            logger.error(f'Import error: {str(e)}')
+
+    return render_template('import_items.html', list=user_list, group=group)
+
+
+# ============================================================================
+# ITEM ROUTES
+# ============================================================================
 
 @list_item_bp.route('/items/<item_id>')
 def view_item(item_id):

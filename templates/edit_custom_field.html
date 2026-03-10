@@ -184,9 +184,9 @@
     <div class="breadcrumb">
         <a href="{{ url_for('list_item.lists') }}">📋 My Lists</a>
         <span>/</span>
-        <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}">{{ list.name }}</a>
+        <a href="{{ get_list_url(list) }}">{{ list.name }}</a>
         <span>/</span>
-        <a href="{{ url_for('list_item.list_settings', list_id=list.slug) }}">Settings</a>
+        <a href="{{ get_list_url(list, endpoint='list_item.list_settings') }}">Settings</a>
         <span>/</span>
         <span>Edit Field</span>
     </div>

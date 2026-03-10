@@ -297,7 +297,7 @@
                     </div>
                 </div>
 
-                <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="list-card-action">
+                <a href="{{ get_list_url(list) }}" class="list-card-action">
                     View List <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
                 </a>
             </div>

@@ -13,7 +13,7 @@
         <div class="modern-breadcrumb">
             <a href="{{ url_for('list_item.lists') }}"><i class="fas fa-list"></i> My Lists</a>
             <span> / </span>
-            <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}">{{ list.name }}</a>
+            <a href="{{ get_list_url(list) }}">{{ list.name }}</a>
             <span> / </span>
             <span style="color: var(--gray-600);">{{ item.name }}</span>
         </div>
@@ -340,7 +340,7 @@
 
         <!-- Back Link -->
         <div class="back-link-container">
-            <a href="{{ url_for('list_item.view_list', list_id=list.slug) }}" class="back-link">
+            <a href="{{ get_list_url(list) }}" class="back-link">
                 <i class="fas fa-arrow-left"></i>
                 <span>Back to {{ list.name }}</span>
             </a>
