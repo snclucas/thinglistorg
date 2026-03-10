@@ -200,7 +200,7 @@
                         </button>
                     </form>
                 {% elif not current_user.is_authenticated %}
-                    <a href="{{ url_for('login', next=request.url) }}" class="modern-btn modern-btn-primary">
+                    <a href="{{ url_for('auth.login', next=request.url) }}" class="modern-btn modern-btn-primary">
                         <i class="fas fa-sign-in-alt"></i>
                         Login to Edit
                     </a>
