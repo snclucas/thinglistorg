@@ -134,6 +134,62 @@ def get_list_url(list_obj, endpoint='list_item.view_list', **kwargs):
     return url_for(endpoint, list_id=list_obj.slug or list_obj.id, **kwargs)
 
 
+def get_item_url(item_obj, endpoint='list_item.view_item', **kwargs):
+    """Generate the correct URL for an item, including group/list slugs if applicable.
+    
+    Args:
+        item_obj: The Item object
+        endpoint: The Flask endpoint to use (default: view_item)
+        **kwargs: Additional parameters to pass to url_for
+    
+    Returns:
+        A URL string for the item
+    """
+    list_obj = item_obj.list
+    
+    # Extract anchor if provided
+    anchor = kwargs.pop('_anchor', None)
+    
+    if list_obj and list_obj.group_id:
+        # Item belongs to a group list - use group-based URL pattern
+        group = list_obj.group
+        if group:
+            # Generate URL as /<group_slug>/<list_slug>/<item_slug>/<action>
+            base_url = f"/{group.slug or group.id}/{list_obj.slug or list_obj.id}/{item_obj.slug or item_obj.id}"
+            
+            # Map endpoints to URL extensions
+            endpoint_extensions = {
+                'list_item.view_item': '',
+                'list_item.edit_item': '/edit',
+                'list_item.delete_item': '/delete',
+                'list_item.set_item_image_main': '/images/{image_id}/main',
+                'list_item.delete_item_images': '/images/delete',
+                'list_item.inline_update_item': '/inline',
+            }
+            
+            extension = endpoint_extensions.get(endpoint, '')
+            
+            # Handle image_id parameter for image routes
+            if 'image_id' in kwargs and '{image_id}' in extension:
+                extension = extension.format(image_id=kwargs.pop('image_id'))
+            
+            url = base_url + extension
+            
+            # Add query parameters if provided
+            if kwargs:
+                params = '&'.join(f"{k}={v}" for k, v in kwargs.items())
+                url += f"?{params}"
+            
+            # Add anchor if provided
+            if anchor:
+                url += f"#{anchor}"
+            
+            return url
+    
+    # Personal list item - use regular URL
+    return url_for(endpoint, item_id=item_obj.slug or item_obj.id, **kwargs)
+
+
 def _save_attachments(item, files):
     """Save file attachments to an item."""
     from models import ItemAttachment
@@ -1930,6 +1986,58 @@ def view_item(item_id):
     )
 
 
+@list_item_bp.route('/<group_slug>/<list_slug>/<item_slug>')
+def view_group_item(group_slug, list_slug, item_slug):
+    """View item details for an item in a group list"""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+    
+    # Get the item
+    item = get_item_by_slug_or_id(item_slug)
+    if not item or item.list_id != user_list.id:
+        abort(404)
+
+    # Check access permissions
+    if current_user.is_authenticated:
+        # Logged in user - check normal permissions
+        if not user_list.user_can_access(current_user.id):
+            flash('You do not have permission to view this item.', 'error')
+            return redirect(url_for('list_item.lists'))
+        can_edit = user_list.user_can_edit(current_user.id)
+    else:
+        # Not logged in - only allow public/hidden lists
+        if not user_list.is_publicly_accessible():
+            flash('You must log in to view this item.', 'info')
+            return redirect(url_for('auth.login', next=request.url))
+        can_edit = False
+
+    return render_template(
+        'view_item.html',
+        item=item,
+        list=user_list,
+        group=group,
+        can_edit=can_edit,
+        image_display_size=current_app.config.get('ITEM_IMAGE_DISPLAY_SIZE', 180)
+    )
+
+
 @list_item_bp.route('/items/<item_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_item(item_id):
@@ -2055,6 +2163,151 @@ def edit_item(item_id):
     return render_template('edit_item.html', item=item, list=user_list)
 
 
+@list_item_bp.route('/<group_slug>/<list_slug>/<item_slug>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_group_item(group_slug, list_slug, item_slug):
+    """Edit an item in a group list"""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+    
+    # Get the item
+    item = get_item_by_slug_or_id(item_slug)
+    if not item or item.list_id != user_list.id:
+        abort(404)
+
+    if not user_list.user_can_edit(current_user.id):
+        flash('You do not have permission to edit this item.', 'error')
+        return redirect(url_for('list_item.lists'))
+
+    if request.method == 'POST':
+        try:
+            item.name = _sanitize_text(request.form.get('name', '').strip())
+            item.description = _sanitize_text(request.form.get('description', '').strip())
+            item.notes = _sanitize_text(request.form.get('notes', '').strip())
+            item.tags = _sanitize_text(request.form.get('tags', '').strip())
+            item_type_name = _sanitize_text(request.form.get('item_type', '').strip())
+            location_name = _sanitize_text(request.form.get('location', '').strip())
+            item.url = _sanitize_text(request.form.get('url', '').strip())
+            item.barcode = _sanitize_text(request.form.get('barcode', '').strip())
+
+            quantity = request.form.get('quantity', '1')
+            try:
+                item.quantity = int(quantity) if quantity else 1
+            except ValueError:
+                item.quantity = 1
+
+            low_stock_threshold = request.form.get('low_stock_threshold', '0')
+            try:
+                item.low_stock_threshold = int(low_stock_threshold) if low_stock_threshold else 0
+            except ValueError:
+                low_stock_threshold = 0
+
+            reminder_at_raw = request.form.get('reminder_at', '').strip()
+            reminder_at = None
+            if reminder_at_raw:
+                try:
+                    reminder_at = datetime.datetime.fromisoformat(reminder_at_raw)
+                except ValueError:
+                    reminder_at = None
+            item.reminder_at = reminder_at
+
+            # Get or create item type
+            if item_type_name:
+                item.item_type = ItemType.get_or_create(item_type_name, current_user.id)
+            else:
+                item.item_type = None
+
+            # Get or create location
+            if location_name:
+                item.location_obj = Location.get_or_create(location_name, current_user.id)
+            else:
+                item.location_obj = None
+
+            if not item.name:
+                flash('Item name is required.', 'error')
+                return redirect(get_item_url(item, endpoint='list_item.edit_item'))
+
+            item.set_tags_list(_parse_tags(item.tags))
+            _save_attachments(item, request.files.getlist('attachments'))
+            _save_item_images(item, request.files.getlist('images'))
+
+            # Handle custom fields
+            for field in user_list.get_custom_fields():
+                custom_value = request.form.get(f'custom_{field.id}', '').strip()
+                existing = item.get_custom_field_value(field.id)
+
+                if field.field_type == 'text':
+                    if custom_value:
+                        if existing:
+                            existing.value_text = custom_value
+                        else:
+                            custom_field = ItemCustomField(
+                                item_id=item.id,
+                                field_id=field.id,
+                                value_text=custom_value
+                            )
+                            db.session.add(custom_field)
+                    elif existing:
+                        db.session.delete(existing)
+
+                elif field.field_type == 'boolean':
+                    is_checked = f'custom_{field.id}' in request.form
+                    if is_checked:
+                        if existing:
+                            existing.value_bool = True
+                        else:
+                            custom_field = ItemCustomField(
+                                item_id=item.id,
+                                field_id=field.id,
+                                value_bool=True
+                            )
+                            db.session.add(custom_field)
+                    elif existing:
+                        db.session.delete(existing)
+
+                elif field.field_type == 'options':
+                    if custom_value:
+                        if existing:
+                            existing.value_option = custom_value
+                        else:
+                            custom_field = ItemCustomField(
+                                item_id=item.id,
+                                field_id=field.id,
+                                value_option=custom_value
+                            )
+                            db.session.add(custom_field)
+                    elif existing:
+                        db.session.delete(existing)
+
+            db.session.commit()
+            _log_action('update', 'item', item.id, {'name': item.name, 'list_id': user_list.id})
+            flash('Item updated successfully!', 'success')
+            return redirect(get_item_url(item))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while updating the item.', 'error')
+            logger.error(f'Edit group item error: {str(e)}')
+
+    return render_template('edit_item.html', item=item, list=user_list, group=group)
+
+
 @list_item_bp.route('/items/<item_id>/delete', methods=['POST'])
 @login_required
 def delete_item(item_id):
@@ -2080,6 +2333,54 @@ def delete_item(item_id):
         logger.error(f'Delete item error: {str(e)}')
 
     return redirect(url_for('list_item.view_list', list_id=list_id))
+
+
+@list_item_bp.route('/<group_slug>/<list_slug>/<item_slug>/delete', methods=['POST'])
+@login_required
+def delete_group_item(group_slug, list_slug, item_slug):
+    """Delete an item in a group list"""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+    
+    # Get the item
+    item = get_item_by_slug_or_id(item_slug)
+    if not item or item.list_id != user_list.id:
+        abort(404)
+
+    if not user_list.user_can_edit(current_user.id):
+        flash('You do not have permission to delete this item.', 'error')
+        return redirect(url_for('list_item.lists'))
+
+    try:
+        item_name = item.name
+        list_id = item.list_id
+        db.session.delete(item)
+        db.session.commit()
+        flash(f'Item "{item_name}" deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while deleting the item.', 'error')
+        logger.error(f'Delete group item error: {str(e)}')
+
+    return redirect(get_list_url(user_list))
+
 @list_item_bp.route('/items/<item_id>/inline', methods=['POST'])
 @login_required
 def inline_update_item(item_id):
@@ -2505,6 +2806,111 @@ def delete_item_images(item_id):
     _log_action('delete_images', 'item', item_id, {'image_ids': image_ids})
     flash('Selected images deleted.', 'success')
     return redirect(url_for('list_item.view_item', item_id=item_id, _anchor='item-images'))
+
+
+@list_item_bp.route('/<group_slug>/<list_slug>/<item_slug>/images/<int:image_id>/main', methods=['POST'])
+@login_required
+def set_group_item_image_main(group_slug, list_slug, item_slug, image_id):
+    """Set an image as the main image for an item in a group list."""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+    
+    # Get the item
+    item = get_item_by_slug_or_id(item_slug)
+    if not item or item.list_id != user_list.id:
+        abort(404)
+
+    if not user_list.user_can_edit(current_user.id):
+        flash('You do not have permission to update images.', 'error')
+        return redirect(get_item_url(item))
+
+    target = ItemImage.query.filter_by(id=image_id, item_id=item.id).first()
+    if not target:
+        flash('Image not found.', 'error')
+        return redirect(get_item_url(item))
+
+    ItemImage.query.filter_by(item_id=item.id, is_main=True).update({'is_main': False})
+    target.is_main = True
+    db.session.commit()
+    _log_action('set_main_image', 'item', item.id, {'image_id': image_id})
+    flash('Main image updated.', 'success')
+    return redirect(get_item_url(item, _anchor='item-images'))
+
+
+@list_item_bp.route('/<group_slug>/<list_slug>/<item_slug>/images/delete', methods=['POST'])
+@login_required
+def delete_group_item_images(group_slug, list_slug, item_slug):
+    """Delete images from an item in a group list."""
+    # Parse the slug to get the ID (format: name-id)
+    group_slug_parts = group_slug.rsplit('-', 1)
+    list_slug_parts = list_slug.rsplit('-', 1)
+    
+    try:
+        group_id = int(group_slug_parts[-1]) if group_slug_parts else None
+        list_id = int(list_slug_parts[-1]) if list_slug_parts else None
+    except (ValueError, IndexError):
+        abort(404)
+    
+    # Get the group
+    group = Group.query.filter_by(id=group_id).first()
+    if not group:
+        abort(404)
+    
+    # Get the list by slug or ID, filtered by group
+    user_list = get_list_by_slug_or_id(list_slug, group_id=group_id)
+    if not user_list:
+        abort(404)
+    
+    # Get the item
+    item = get_item_by_slug_or_id(item_slug)
+    if not item or item.list_id != user_list.id:
+        abort(404)
+
+    if not user_list.user_can_edit(current_user.id):
+        flash('You do not have permission to delete images.', 'error')
+        return redirect(get_item_url(item))
+
+    image_ids = [int(i) for i in request.form.getlist('image_ids') if i.isdigit()]
+    if not image_ids:
+        flash('No images selected.', 'error')
+        return redirect(get_item_url(item, _anchor='item-images'))
+
+    images = ItemImage.query.filter(ItemImage.item_id == item.id, ItemImage.id.in_(image_ids)).all()
+    for image in images:
+        if image.storage_path and os.path.exists(image.storage_path):
+            try:
+                os.remove(image.storage_path)
+            except OSError:
+                pass
+        db.session.delete(image)
+
+    db.session.commit()
+
+    remaining = ItemImage.query.filter_by(item_id=item.id).order_by(ItemImage.created_at.asc()).all()
+    if remaining and not any(img.is_main for img in remaining):
+        remaining[0].is_main = True
+        db.session.commit()
+
+    _log_action('delete_images', 'item', item.id, {'image_ids': image_ids})
+    flash('Selected images deleted.', 'success')
+    return redirect(get_item_url(item, _anchor='item-images'))
 
 
 @list_item_bp.route('/image-content/<path:filename>')

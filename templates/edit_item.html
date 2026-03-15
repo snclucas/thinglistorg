@@ -192,6 +192,19 @@
 
 {% block content %}
 <div class="form-container">
+    <!-- Breadcrumb -->
+    <div class="modern-breadcrumb" style="margin-bottom: 1.5rem;">
+        <a href="{{ url_for('list_item.lists') }}"><i class="fas fa-list"></i> My Lists</a>
+        <span> / </span>
+        {% if group %}
+            <a href="{{ url_for('list_item.view_group_list', group_slug=group.slug or group.id, list_slug=list.slug or list.id) }}">{{ group.name }}</a>
+            <span> / </span>
+        {% endif %}
+        <a href="{{ get_list_url(list) }}">{{ list.name }}</a>
+        <span> / </span>
+        <span style="color: var(--gray-600);">{{ item.name }}</span>
+    </div>
+
     <h1>✏️ Edit Item</h1>
     <p>List: <strong>{{ list.name }}</strong></p>
 

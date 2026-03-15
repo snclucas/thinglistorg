@@ -305,7 +305,7 @@
                             <input type="checkbox" class="item-checkbox item-select" data-item-id="{{ item.slug }}" data-item-name="{{ item.name }}">
                         </td>
                         <td data-label="Name" class="item-name-cell">
-                            <a href="{{ url_for('list_item.view_item', item_id=item.slug) }}" class="item-name-link">
+                            <a href="{{ get_item_url(item) }}" class="item-name-link">
                                 {{ item.name }}{% if list.is_field_visible('quantity') %} <span style="color: var(--gray-500); font-weight: normal;">({{ item.quantity }})</span>{% endif %}
                             </a>
                         </td>

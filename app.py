@@ -97,14 +97,14 @@ app.register_blueprint(auth_bp)
 # Register Blueprint for List & Item Routes
 app.register_blueprint(list_item_bp)
 
-# Import the get_list_url helper
-from list_item_routes import get_list_url
+# Import the get_list_url and get_item_url helpers
+from list_item_routes import get_list_url, get_item_url
 
-# Register Jinja2 context processor to make get_list_url available in templates
+# Register Jinja2 context processor to make get_list_url and get_item_url available in templates
 @app.context_processor
 def inject_list_url_helper():
-    """Make get_list_url function available in all templates"""
-    return dict(get_list_url=get_list_url)
+    """Make get_list_url and get_item_url functions available in all templates"""
+    return dict(get_list_url=get_list_url, get_item_url=get_item_url)
 
 # Security Headers Middleware
 @app.after_request
