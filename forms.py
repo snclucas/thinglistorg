@@ -112,6 +112,15 @@ class CreateGroupForm(FlaskForm):
         'Description',
         validators=[Optional(), Length(max=1000, message='Description must be 1000 characters or less')]
     )
+    visibility = SelectField(
+        'Group Visibility',
+        choices=[
+            ('private', 'Private - Only members can view lists and items'),
+            ('public', 'Public - Anyone can view public lists and items')
+        ],
+        default='private',
+        validators=[DataRequired()]
+    )
     allow_members_create_lists = BooleanField(
         'Allow members to create lists',
         default=True
@@ -135,6 +144,14 @@ class EditGroupForm(FlaskForm):
     description = TextAreaField(
         'Description',
         validators=[Optional(), Length(max=1000, message='Description must be 1000 characters or less')]
+    )
+    visibility = SelectField(
+        'Group Visibility',
+        choices=[
+            ('private', 'Private - Only members can view lists and items'),
+            ('public', 'Public - Anyone can view public lists and items')
+        ],
+        validators=[DataRequired()]
     )
     allow_members_create_lists = BooleanField(
         'Allow members to create lists'

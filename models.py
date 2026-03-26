@@ -284,6 +284,7 @@ class Group(db.Model):
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    visibility = db.Column(db.String(20), default='private', nullable=False)  # 'private', 'public'
     settings = db.Column(db.JSON, default=dict, nullable=False)  # Default permissions and settings
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -390,6 +391,35 @@ class Group(db.Model):
         if not member:
             return False
         return member.role == role
+
+    def is_private(self):
+        """Check if group is private (only members can see)"""
+        return self.visibility == 'private'
+
+    def is_public(self):
+        """Check if group is public (everyone can view)"""
+        return self.visibility == 'public'
+
+    def user_can_access(self, user_id):
+        """Check if a user can access this group (view lists and items)"""
+        # Owner always has access
+        if self.is_owner(user_id):
+            return True
+        
+        # Check if user is a member
+        if self.get_member(user_id):
+            return True
+        
+        # If public, anyone can access
+        if self.is_public():
+            return True
+        
+        return False
+
+    def user_can_manage(self, user_id):
+        """Check if a user can manage this group (edit, add members)"""
+        # Only owner and admins can manage
+        return self.is_owner(user_id) or self.is_admin(user_id)
 
 
 class GroupMember(db.Model):
@@ -723,6 +753,12 @@ class List(db.Model):
 
     def is_publicly_accessible(self):
         """Check if list is accessible to public (either public or hidden)"""
+        # If list belongs to a private group, not publicly accessible
+        if self.group_id:
+            group = self.group
+            if group and group.is_private():
+                return False
+        
         return self.visibility in ('public', 'hidden')
 
     def user_can_access(self, user_id):
@@ -731,13 +767,25 @@ class List(db.Model):
         if self.user_id == user_id:
             return True
 
-        # If list belongs to a group, check group membership
+        # If list belongs to a group, check group access first
         if self.group_id:
             group = self.group
             if group:
+                # Check if user can access the group
+                if not group.user_can_access(user_id):
+                    # User can't access the group at all
+                    return False
+                
+                # User can access group, check list-level permissions
                 member = group.get_member(user_id)
                 if member and member.can_view():
                     return True
+                
+                # For public groups: if list is public/hidden, user can access
+                if group.is_public() and self.visibility in ('public', 'hidden'):
+                    return True
+                
+                return False
 
         # Check if list is shared with user
         share = ListShare.query.filter_by(list_id=self.id, user_id=user_id).first()

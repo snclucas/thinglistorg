@@ -34,6 +34,10 @@
                     Owned by <strong>{{ group.owner.username }}</strong>
                 </span>
                 <span class="meta-badge">
+                    <i class="fas fa-lock"></i>
+                    {% if group.is_public() %}<span style="color: #10b981;">Public</span>{% else %}<span style="color: #6b7280;">Private</span>{% endif %}
+                </span>
+                <span class="meta-badge">
                     <i class="fas fa-calendar"></i>
                     Created {{ group.created_at.strftime('%b %d, %Y') }}
                 </span>

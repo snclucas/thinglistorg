@@ -16,7 +16,7 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import inspect, text, and_, or_, func
 from sqlalchemy.orm import attributes
 from models import db, User, List, Item, ItemType, Tag, ItemAttachment, AuditLog, item_tags, ListCustomField, ItemCustomField, ListShare, Notification, ItemImage, Group, GroupMember, Location
-from slug_utils import get_list_by_slug_or_id, get_item_by_slug_or_id
+from slug_utils import get_list_by_slug_or_id, get_item_by_slug_or_id, get_list_by_username_and_slug
 from forms import ItemTypeForm, LocationForm
 import os
 import csv
@@ -91,7 +91,7 @@ def _log_action(action, entity, entity_id, meta=None):
 
 
 def get_list_url(list_obj, endpoint='list_item.view_list', **kwargs):
-    """Generate the correct URL for a list, including group slug if applicable.
+    """Generate the correct URL for a list, including username for personal lists or group slug for group lists.
     
     Args:
         list_obj: The List object
@@ -130,7 +130,33 @@ def get_list_url(list_obj, endpoint='list_item.view_list', **kwargs):
             
             return url
     
-    # Personal list - use regular URL
+    # Personal list - use username-based URL pattern: /@<username>/<list_slug>
+    owner = list_obj.owner
+    if owner:
+        base_url = f"/@{owner.username}/{list_obj.slug or list_obj.id}"
+        
+        # Map endpoints to URL extensions
+        endpoint_extensions = {
+            'list_item.view_list': '',
+            'list_item.edit_list': '/edit',
+            'list_item.list_settings': '/settings',
+            'list_item.share_list': '/share',
+            'list_item.create_item': '/items/create',
+            'list_item.export_items': '/export',
+            'list_item.import_items': '/import',
+        }
+        
+        extension = endpoint_extensions.get(endpoint, '')
+        url = base_url + extension
+        
+        # Add query parameters if provided
+        if kwargs:
+            params = '&'.join(f"{k}={v}" for k, v in kwargs.items())
+            url += f"?{params}"
+        
+        return url
+    
+    # Fallback to old URL format if owner/user is not found
     return url_for(endpoint, list_id=list_obj.slug or list_obj.id, **kwargs)
 
 
@@ -663,7 +689,261 @@ def view_group_list(group_slug, list_slug):
     )
 
 
-@list_item_bp.route('/lists/<list_id>/edit', methods=['GET', 'POST'])
+# Personal list routes using @username/list_slug pattern
+@list_item_bp.route('/@<username>/<list_slug>')
+def view_personal_list(username, list_slug):
+    """View a personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    # Check access permissions
+    if current_user.is_authenticated:
+        # Logged in user - check normal permissions
+        if not user_list.user_can_access(current_user.id):
+            flash('You do not have permission to view this list.', 'error')
+            return redirect(url_for('list_item.lists'))
+        can_edit = user_list.user_can_edit(current_user.id)
+    else:
+        # Not logged in - only allow public/hidden lists
+        if not user_list.is_publicly_accessible():
+            flash('You must log in to view this list.', 'info')
+            return redirect(url_for('auth.login', next=request.url))
+        can_edit = False
+
+    # Filters and pagination
+    page = max(int(request.args.get('page', 1)), 1)
+
+    # Get per_page from URL parameter or default
+    url_per_page = request.args.get('per_page', None)
+    if url_per_page:
+        per_page = min(max(int(url_per_page), 5), 100)
+    else:
+        # For anonymous users, default to 20
+        # For authenticated users, use their preference
+        if current_user.is_authenticated:
+            per_page = current_user.get_items_per_page()
+        else:
+            per_page = 20
+
+    base_query = _build_item_query(user_list.id, request.args)
+    total = base_query.count()
+    items = (base_query
+             .order_by(Item.created_at.desc())
+             .offset((page - 1) * per_page)
+             .limit(per_page)
+             .all())
+
+    pages = (total + per_page - 1) // per_page if total else 1
+
+    # Lists for bulk move action (only owned lists or lists user can edit)
+    # Only query user lists if user is authenticated
+    user_lists = []
+    if current_user.is_authenticated:
+        user_lists = List.query.filter_by(user_id=current_user.id, group_id=None).order_by(List.created_at.desc()).all()
+
+    return render_template(
+        'view_list.html',
+        list=user_list,
+        items=items,
+        total=total,
+        pages=pages,
+        page=page,
+        can_edit=can_edit,
+        user_lists=user_lists,
+        per_page=per_page,
+        url_per_page=url_per_page,
+        filters={
+            'search': request.args.get('search', ''),
+            'tag': request.args.get('tag', ''),
+            'type': request.args.get('type', ''),
+            'location': request.args.get('location', ''),
+            'low_stock': request.args.get('low_stock', '')
+        }
+    )
+
+
+@list_item_bp.route('/@<username>/<list_slug>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_personal_list(username, list_slug):
+    """Edit a personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    if user_list.user_id != current_user.id:
+        abort(403)
+
+    # Redirect to old edit route with list_id for form processing
+    return redirect(url_for('list_item.edit_list', list_id=user_list.id))
+
+
+@list_item_bp.route('/@<username>/<list_slug>/delete', methods=['POST'])
+@login_required
+def delete_personal_list(username, list_slug):
+    """Delete a personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    if user_list.user_id != current_user.id:
+        abort(403)
+
+    # Redirect to old delete route with list_id
+    return redirect(url_for('list_item.delete_list', list_id=user_list.id), code=307)
+
+
+@list_item_bp.route('/@<username>/<list_slug>/settings', methods=['GET', 'POST'])
+@login_required
+def settings_personal_list(username, list_slug):
+    """Access settings for a personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    if user_list.user_id != current_user.id:
+        abort(403)
+
+    # Redirect to old settings route with list_id
+    return redirect(url_for('list_item.list_settings', list_id=user_list.id))
+
+
+@list_item_bp.route('/@<username>/<list_slug>/share', methods=['GET', 'POST'])
+@login_required
+def share_personal_list(username, list_slug):
+    """Share a personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    if user_list.user_id != current_user.id:
+        abort(403)
+
+    # Redirect to old share route with list_id
+    return redirect(url_for('list_item.share_list', list_id=user_list.id))
+
+
+@list_item_bp.route('/@<username>/<list_slug>/items/create', methods=['GET', 'POST'])
+@login_required
+def create_item_for_personal_list(username, list_slug):
+    """Create an item in a personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    if user_list.user_id != current_user.id:
+        abort(403)
+
+    # Redirect to old create_item route with list_id
+    return redirect(url_for('list_item.create_item', list_id=user_list.id))
+
+
+@list_item_bp.route('/@<username>/<list_slug>/custom-fields/add', methods=['POST'])
+@login_required
+def add_custom_field_personal_list(username, list_slug):
+    """Add custom field to a personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    if user_list.user_id != current_user.id:
+        abort(403)
+
+    # Redirect to old route with list_id
+    return redirect(url_for('list_item.add_custom_field_to_list', list_id=user_list.id), code=307)
+
+
+@list_item_bp.route('/@<username>/<list_slug>/custom-fields/<int:field_id>/delete', methods=['POST'])
+@login_required
+def delete_custom_field_personal_list(username, list_slug, field_id):
+    """Delete custom field from personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    if user_list.user_id != current_user.id:
+        abort(403)
+
+    # Redirect to old route with list_id
+    return redirect(url_for('list_item.delete_custom_field_from_list', list_id=user_list.id, field_id=field_id), code=307)
+
+
+@list_item_bp.route('/@<username>/<list_slug>/custom-fields/<int:field_id>/toggle-visibility', methods=['POST'])
+@login_required
+def toggle_custom_field_visibility_personal_list(username, list_slug, field_id):
+    """Toggle custom field visibility for personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    if user_list.user_id != current_user.id:
+        abort(403)
+
+    # Redirect to old route with list_id
+    return redirect(url_for('list_item.toggle_custom_field_visibility', list_id=user_list.id, field_id=field_id), code=307)
+
+
+@list_item_bp.route('/@<username>/<list_slug>/custom-fields/<int:field_id>/toggle-editable', methods=['POST'])
+@login_required
+def toggle_custom_field_editable_personal_list(username, list_slug, field_id):
+    """Toggle custom field editability for personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    if user_list.user_id != current_user.id:
+        abort(403)
+
+    # Redirect to old route with list_id
+    return redirect(url_for('list_item.toggle_custom_field_editable', list_id=user_list.id, field_id=field_id), code=307)
+
+
+@list_item_bp.route('/@<username>/<list_slug>/custom-fields/<int:field_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_custom_field_personal_list(username, list_slug, field_id):
+    """Edit custom field for personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    if user_list.user_id != current_user.id:
+        abort(403)
+
+    # Redirect to old route with list_id
+    return redirect(url_for('list_item.edit_custom_field', list_id=user_list.id, field_id=field_id))
+
+
+@list_item_bp.route('/@<username>/<list_slug>/export', methods=['GET'])
+@login_required
+def export_items_personal_list(username, list_slug):
+    """Export items from personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    if not user_list.user_can_access(current_user.id):
+        abort(403)
+
+    # Redirect to old export route with list_id
+    return redirect(url_for('list_item.export_items', list_id=user_list.id))
+
+
+@list_item_bp.route('/@<username>/<list_slug>/import', methods=['GET', 'POST'])
+@login_required
+def import_items_personal_list(username, list_slug):
+    """Import items to personal list using @username/list_slug pattern"""
+    user_list = get_list_by_username_and_slug(username, list_slug)
+    if not user_list:
+        abort(404)
+
+    if user_list.user_id != current_user.id:
+        abort(403)
+
+    # Redirect to old import route with list_id
+    return redirect(url_for('list_item.import_items', list_id=user_list.id))
+
+
+
 @login_required
 def edit_list(list_id):
     """Edit a list"""

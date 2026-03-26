@@ -78,6 +78,30 @@ def get_list_by_slug_or_id(slug_or_id, group_id=None):
     return None
 
 
+def get_list_by_username_and_slug(username, list_slug):
+    """Get a personal (non-group) list by username and slug.
+    
+    Args:
+        username: The username of the list owner
+        list_slug: The slug of the list
+    
+    Returns:
+        List object or None if not found
+    
+    Examples:
+        get_list_by_username_and_slug("john", "my-list-123")
+    """
+    from models import User
+    
+    # Get the user by username
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return None
+    
+    # Get the list by user_id and slug (and ensure it's not a group list)
+    return List.query.filter_by(user_id=user.id, slug=list_slug, group_id=None).first()
+
+
 def get_item_by_slug_or_id(slug_or_id):
     """Get an item by slug or ID.
     

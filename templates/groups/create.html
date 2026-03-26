@@ -61,6 +61,26 @@
                 {% endif %}
             </div>
 
+            <!-- Visibility Field -->
+            <div class="form-group">
+                <label for="visibility" class="form-label">Group Visibility *</label>
+                {% if form.visibility.errors %}
+                    {{ form.visibility(class="form-control form-control-error") }}
+                    <div class="form-error">
+                        {% for error in form.visibility.errors %}
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>{{ error }}</span><br>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.visibility(class="form-control") }}
+                {% endif %}
+                <p class="form-help-text" style="font-size: 0.85rem; color: var(--gray-600); margin-top: 0.5rem;">
+                    <strong>Private:</strong> Only group members can view this group and its lists<br>
+                    <strong>Public:</strong> Anyone can view public lists in this group (private lists remain members-only)
+                </p>
+            </div>
+
             <!-- Settings Card -->
             <div class="modern-card settings-card">
                 <div class="card-header">

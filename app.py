@@ -365,7 +365,8 @@ def create_group():
         group = Group(
             name=_sanitize_text(form.name.data),
             description=_sanitize_text(form.description.data),
-            owner_id=current_user.id
+            owner_id=current_user.id,
+            visibility=form.visibility.data
         )
         group.set_settings({
             'allow_members_create_lists': form.allow_members_create_lists.data,
@@ -398,7 +399,7 @@ def view_group(group_id):
         abort(404)
 
     # Check if user has access to this group
-    if not group.is_owner(current_user.id) and not group.get_member(current_user.id):
+    if not group.user_can_access(current_user.id):
         flash('You do not have access to this group.', 'danger')
         return redirect(url_for('view_groups'))
 
@@ -433,6 +434,7 @@ def edit_group(group_id):
     if form.validate_on_submit():
         group.name = _sanitize_text(form.name.data)
         group.description = _sanitize_text(form.description.data)
+        group.visibility = form.visibility.data
         group.set_settings({
             'allow_members_create_lists': form.allow_members_create_lists.data,
             'allow_members_edit_shared_lists': form.allow_members_edit_shared_lists.data,
@@ -446,6 +448,7 @@ def edit_group(group_id):
     if request.method == 'GET':
         form.name.data = group.name
         form.description.data = group.description
+        form.visibility.data = group.visibility
         settings = group.get_settings()
         form.allow_members_create_lists.data = settings.get('allow_members_create_lists', True)
         form.allow_members_edit_shared_lists.data = settings.get('allow_members_edit_shared_lists', True)
