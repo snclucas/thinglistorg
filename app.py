@@ -128,10 +128,11 @@ def set_security_headers(response):
     # Content Security Policy - prevents various attacks
     csp = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.google.com https://www.gstatic.com; "
         "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
         "img-src 'self' data: https: http://localhost; "
         "font-src 'self' https://cdnjs.cloudflare.com; "
+        "frame-src 'self' https://www.google.com https://www.gstatic.com; "
         "connect-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "

@@ -48,7 +48,7 @@
         font-size: 0.95rem;
     }
 
-    textarea, input[type="text"], input[type="number"], input[type="url"], input[type="datetime-local"] {
+    textarea, input[type="text"], input[type="number"], input[type="url"], input[type="datetime-local"], select {
         width: 100%;
         padding: 0.75rem;
         border: 1px solid #d1d5db;
@@ -59,7 +59,18 @@
         font-family: inherit;
     }
 
-    textarea:focus, input:focus {
+    select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        padding-right: 2.5rem;
+        background-image: linear-gradient(45deg, transparent 50%, #6b7280 50%), linear-gradient(135deg, #6b7280 50%, transparent 50%);
+        background-position: calc(100% - 1.1rem) calc(50% - 2px), calc(100% - 0.8rem) calc(50% - 2px);
+        background-size: 7px 7px, 7px 7px;
+        background-repeat: no-repeat;
+    }
+
+    textarea:focus, input:focus, select:focus {
         outline: none;
         border-color: #2563eb;
         background: white;
@@ -67,14 +78,14 @@
     }
 
     /* Readonly field styling */
-    textarea[readonly], input[readonly] {
+    textarea[readonly], input[readonly], select:disabled {
         background: #f3f4f6;
         color: #6b7280;
         cursor: not-allowed;
         border-color: #e5e7eb;
     }
 
-    textarea[readonly]:focus, input[readonly]:focus {
+    textarea[readonly]:focus, input[readonly]:focus, select:disabled:focus {
         border-color: #e5e7eb;
         box-shadow: none;
     }

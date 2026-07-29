@@ -90,6 +90,37 @@ def _log_action(action, entity, entity_id, meta=None):
         db.session.rollback()
 
 
+def _build_field_settings_from_form(form_data):
+    """Build field visibility/editability settings from checkbox form data."""
+    fields = [
+        'name', 'description', 'notes', 'quantity', 'low_stock_threshold',
+        'item_type', 'location', 'barcode', 'url', 'tags', 'reminder_at', 'attachments', 'images'
+    ]
+
+    field_settings = {}
+    for field in fields:
+        visible_key = f'visible_{field}'
+        editable_key = f'editable_{field}'
+
+        # Name is always visible and editable (required field)
+        if field == 'name':
+            field_settings[field] = {'visible': True, 'editable': True}
+        else:
+            visible = visible_key in form_data
+            editable = editable_key in form_data
+
+            # If not visible, it can't be editable
+            if not visible:
+                editable = False
+
+            field_settings[field] = {
+                'visible': visible,
+                'editable': editable
+            }
+
+    return field_settings
+
+
 def get_list_url(list_obj, endpoint='list_item.view_list', **kwargs):
     """Generate the correct URL for a list, including username for personal lists or group slug for group lists.
     
@@ -804,7 +835,12 @@ def settings_personal_list(username, list_slug):
     if user_list.user_id != current_user.id:
         abort(403)
 
-    # Redirect to old settings route with list_id
+    # Preserve POST body when submitting settings from @username URLs.
+    # A normal 302 converts POST to GET in many clients and drops form data.
+    if request.method == 'POST':
+        return redirect(url_for('list_item.list_settings', list_id=user_list.id), code=307)
+
+    # Redirect GET requests to canonical settings route
     return redirect(url_for('list_item.list_settings', list_id=user_list.id))
 
 
@@ -1057,34 +1093,7 @@ def list_settings(list_id):
             # Log the incoming form data
             logger.info(f'Form data received: {dict(request.form)}')
 
-            # Define all available fields
-            fields = [
-                'name', 'description', 'notes', 'quantity', 'low_stock_threshold',
-                'item_type', 'location', 'barcode', 'url', 'tags', 'reminder_at', 'attachments', 'images'
-            ]
-            
-            # Build field settings from form data
-            field_settings = {}
-            for field in fields:
-                visible_key = f'visible_{field}'
-                editable_key = f'editable_{field}'
-                
-                # Name is always visible and editable (required field)
-                if field == 'name':
-                    field_settings[field] = {'visible': True, 'editable': True}
-                else:
-                    visible = visible_key in request.form
-                    editable = editable_key in request.form
-                    
-                    # If not visible, it can't be editable
-                    if not visible:
-                        editable = False
-                    
-                    field_settings[field] = {
-                        'visible': visible,
-                        'editable': editable
-                    }
-                    logger.debug(f'Field {field}: visible={visible}, editable={editable}')
+            field_settings = _build_field_settings_from_form(request.form)
 
             # Log the settings being saved
             logger.info(f'Saving field settings for list {list_id}: {field_settings}')
@@ -1428,11 +1437,18 @@ def group_list_settings(group_slug, list_slug):
 
     if request.method == 'POST':
         try:
-            settings = request.form.get('field_settings', '{}')
-            user_list.set_field_settings(json.loads(settings))
+            logger.info(f'Group list settings form data received: {dict(request.form)}')
+
+            field_settings = _build_field_settings_from_form(request.form)
+            logger.info(f'Saving group field settings for list {user_list.id}: {field_settings}')
+
+            user_list.set_field_settings(field_settings)
+            attributes.flag_modified(user_list, 'settings')
             db.session.commit()
-            _log_action('update_settings', 'list', user_list.id, {})
+
+            _log_action('update_settings', 'list', user_list.id, {'settings': field_settings})
             flash('Field settings updated successfully!', 'success')
+            return redirect(get_list_url(user_list))
             
         except Exception as e:
             db.session.rollback()
@@ -1610,19 +1626,21 @@ def add_custom_field(list_id):
         flash('You do not have permission to edit this list.', 'error')
         return redirect(url_for('list_item.lists'))
 
+    resolved_list_id = user_list.id
+
     try:
         name = request.form.get('field_name', '').strip()
         field_type = request.form.get('field_type', 'text')
 
         if not name:
             flash('Field name is required.', 'error')
-            return redirect(url_for('list_item.list_settings', list_id=list_id))
+            return redirect(url_for('list_item.list_settings', list_id=resolved_list_id))
 
         # Check if field already exists
-        existing = ListCustomField.query.filter_by(list_id=list_id, name=name).first()
+        existing = ListCustomField.query.filter_by(list_id=resolved_list_id, name=name).first()
         if existing:
             flash('A field with this name already exists.', 'error')
-            return redirect(url_for('list_item.list_settings', list_id=list_id))
+            return redirect(url_for('list_item.list_settings', list_id=resolved_list_id))
 
         # Parse options for option field type
         options = None
@@ -1632,13 +1650,13 @@ def add_custom_field(list_id):
                 options = [opt.strip() for opt in options_str.split('\n') if opt.strip()]
             else:
                 flash('Options are required for option fields.', 'error')
-                return redirect(url_for('list_item.list_settings', list_id=list_id))
+                return redirect(url_for('list_item.list_settings', list_id=resolved_list_id))
 
         # Get highest sort order
-        max_sort = db.session.query(func.max(ListCustomField.sort_order)).filter_by(list_id=list_id).scalar() or 0
+        max_sort = db.session.query(func.max(ListCustomField.sort_order)).filter_by(list_id=resolved_list_id).scalar() or 0
 
         new_field = ListCustomField(
-            list_id=list_id,
+            list_id=resolved_list_id,
             name=name,
             field_type=field_type,
             options=options,
@@ -1658,7 +1676,7 @@ def add_custom_field(list_id):
         flash('An error occurred while adding the field.', 'error')
         logger.error(f'Add custom field error: {str(e)}')
 
-    return redirect(url_for('list_item.list_settings', list_id=list_id))
+    return redirect(url_for('list_item.list_settings', list_id=resolved_list_id))
 
 
 @list_item_bp.route('/lists/<list_id>/custom-fields/<int:field_id>/delete', methods=['POST'])
@@ -1673,8 +1691,10 @@ def delete_custom_field(list_id, field_id):
         flash('You do not have permission to edit this list.', 'error')
         return redirect(url_for('list_item.lists'))
 
+    resolved_list_id = user_list.id
+
     try:
-        field = ListCustomField.query.filter_by(id=field_id, list_id=list_id).first_or_404()
+        field = ListCustomField.query.filter_by(id=field_id, list_id=resolved_list_id).first_or_404()
         field_name = field.name
 
         # Delete all item custom field values that reference this field
@@ -1692,7 +1712,7 @@ def delete_custom_field(list_id, field_id):
         flash('An error occurred while deleting the field.', 'error')
         logger.error(f'Delete custom field error: {str(e)}')
 
-    return redirect(url_for('list_item.list_settings', list_id=list_id))
+    return redirect(url_for('list_item.list_settings', list_id=resolved_list_id))
 
 
 @list_item_bp.route('/lists/<list_id>/custom-fields/<int:field_id>/toggle-visibility', methods=['POST'])
@@ -1707,8 +1727,10 @@ def toggle_custom_field_visibility(list_id, field_id):
         flash('You do not have permission to edit this list.', 'error')
         return redirect(url_for('list_item.lists'))
 
+    resolved_list_id = user_list.id
+
     try:
-        field = ListCustomField.query.filter_by(id=field_id, list_id=list_id).first_or_404()
+        field = ListCustomField.query.filter_by(id=field_id, list_id=resolved_list_id).first_or_404()
         field.is_visible = not field.is_visible
         db.session.commit()
 
@@ -1720,7 +1742,7 @@ def toggle_custom_field_visibility(list_id, field_id):
         flash('An error occurred.', 'error')
         logger.error(f'Toggle visibility error: {str(e)}')
 
-    return redirect(url_for('list_item.list_settings', list_id=list_id))
+    return redirect(url_for('list_item.list_settings', list_id=resolved_list_id))
 
 
 @list_item_bp.route('/lists/<list_id>/custom-fields/<int:field_id>/toggle-editable', methods=['POST'])
@@ -1735,8 +1757,10 @@ def toggle_custom_field_editable(list_id, field_id):
         flash('You do not have permission to edit this list.', 'error')
         return redirect(url_for('list_item.lists'))
 
+    resolved_list_id = user_list.id
+
     try:
-        field = ListCustomField.query.filter_by(id=field_id, list_id=list_id).first_or_404()
+        field = ListCustomField.query.filter_by(id=field_id, list_id=resolved_list_id).first_or_404()
         field.is_editable = not field.is_editable
         db.session.commit()
 
@@ -1748,7 +1772,7 @@ def toggle_custom_field_editable(list_id, field_id):
         flash('An error occurred.', 'error')
         logger.error(f'Toggle editable error: {str(e)}')
 
-    return redirect(url_for('list_item.list_settings', list_id=list_id))
+    return redirect(url_for('list_item.list_settings', list_id=resolved_list_id))
 
 
 @list_item_bp.route('/lists/<list_id>/custom-fields/<int:field_id>/edit', methods=['GET', 'POST'])

@@ -3,9 +3,32 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy import func
+from sqlalchemy.ext.mutable import MutableDict, MutableList
+from sqlalchemy.types import TypeDecorator, Text
+import json
 import re
 
 db = SQLAlchemy()
+
+
+class JSONText(TypeDecorator):
+    """Store JSON-serializable values in a portable TEXT column."""
+
+    impl = Text
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        return json.dumps(value)
+
+    def process_result_value(self, value, dialect):
+        if value in (None, ''):
+            return None
+        try:
+            return json.loads(value)
+        except (TypeError, ValueError):
+            return None
 
 
 def generate_slug(name, id):
@@ -28,7 +51,7 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
-    preferences = db.Column(db.JSON, default=dict, nullable=False)  # JSON for storing user preferences
+    preferences = db.Column(MutableDict.as_mutable(JSONText), default=dict, nullable=False)
 
     # Email verification fields
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
@@ -80,10 +103,10 @@ class User(UserMixin, db.Model):
 
     def set_items_per_page(self, per_page):
         """Set items per page preference"""
-        if not self.preferences:
-            self.preferences = {}
+        preferences = self.preferences
         per_page = min(max(int(per_page), 5), 100)
-        self.preferences['items_per_page'] = per_page
+        preferences['items_per_page'] = per_page
+        self.preferences = preferences
         return per_page
 
     # Email Verification Methods
@@ -285,7 +308,7 @@ class Group(db.Model):
     description = db.Column(db.Text)
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     visibility = db.Column(db.String(20), default='private', nullable=False)  # 'private', 'public'
-    settings = db.Column(db.JSON, default=dict, nullable=False)  # Default permissions and settings
+    settings = db.Column(MutableDict.as_mutable(JSONText), default=dict, nullable=False)  # Default permissions and settings
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -430,7 +453,7 @@ class GroupMember(db.Model):
     group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     role = db.Column(db.String(20), nullable=False, default='member')  # 'admin', 'member', 'viewer'
-    permissions = db.Column(db.JSON)  # User-specific permission overrides
+    permissions = db.Column(MutableDict.as_mutable(JSONText))  # User-specific permission overrides
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -561,7 +584,7 @@ class AuditLog(db.Model):
     action = db.Column(db.String(50), nullable=False)
     entity = db.Column(db.String(50), nullable=False)
     entity_id = db.Column(db.Integer, nullable=False)
-    meta = db.Column(db.JSON)
+    meta = db.Column(MutableDict.as_mutable(JSONText))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
@@ -702,7 +725,7 @@ class List(db.Model):
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     tags = db.Column(db.String(500))  # Comma-separated tags
-    settings = db.Column(db.JSON)  # Field visibility and editability settings
+    settings = db.Column(MutableDict.as_mutable(JSONText))  # Field visibility and editability settings
     visibility = db.Column(db.String(20), default='private', nullable=False)  # 'private', 'public', 'hidden'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -916,7 +939,7 @@ class ListCustomField(db.Model):
     list_id = db.Column(db.Integer, db.ForeignKey('lists.id'), nullable=False, index=True)
     name = db.Column(db.String(120), nullable=False)
     field_type = db.Column(db.String(20), nullable=False)  # text, boolean, options
-    options = db.Column(db.JSON)  # list of options for 'options' type
+    options = db.Column(MutableList.as_mutable(JSONText))  # list of options for 'options' type
     is_visible = db.Column(db.Boolean, default=True, nullable=False)
     is_editable = db.Column(db.Boolean, default=True, nullable=False)
     sort_order = db.Column(db.Integer, default=0)
